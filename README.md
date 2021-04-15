@@ -58,7 +58,6 @@ Options:
 
 ---
 
-![GUAP%20100d62341b4149bf9248595d9f110eba/guap.png](GUAP%20100d62341b4149bf9248595d9f110eba/guap.png)
 
 ### Metagenomics pipeline using kraken:
 
