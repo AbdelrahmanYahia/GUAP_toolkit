@@ -150,7 +150,7 @@ sample_check(){
         counter=$(( counter + 1 ))
     done
     # checks for files with extension not fastq or fastq.gz 
-    if [ `ls ${1}/ -I *'.fast'* | wc -w ` -ne 0 ];then 
+    if [ `ls ${1}/ -I *'.fast'* | wc -w ` -ne 0 ];then # can be edited to check for (fastq || fastq.gz) specifically
         echo -e "${RED}FOUND FILES WITH EXTENSION NOT fastq.gz (EC 7)${NC}"
         return_value=0
     fi
