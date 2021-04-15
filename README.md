@@ -46,11 +46,11 @@ Usage: GUAP [OPTIONS]
 GUAP -i <inputdir> -o <outputdir> -c <analysis> -a <aligner> -t INT 
 
 Options:
-  -c <miRNA|kraken>        Choose analysis
-  -a <bwa|bowtie|bowtie2|hisat2>        Choose aligner
+  -c <miRNA|kraken>                     Choose analysis                default = kraken
+  -a <bwa|bowtie|bowtie2|hisat2>        Choose aligner                 default = bowtie2
   -i <str>                              Input directory path
   -o <str>                              Output directory path
-  -t <int>                              Number of threads
+  -t <int>                              Number of threads              default = 50
   -m <first|second>                     miRNA pipeline choise
   -h                                    Help message ( This message ) 
 "
