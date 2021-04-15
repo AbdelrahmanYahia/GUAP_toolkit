@@ -1,0 +1,96 @@
+#!/bin/bash
+
+## this is main file of analysis
+## it takes command line arguments to perfrome specific analysis pipline.
+
+# opens piplines script file
+source pipelines.sh
+
+# usage message
+__usage="
+Usage: $(basename $0) [OPTIONS]
+
+GUAP -i <inputdir> -o <outputdir> -c <analysis> -a <aligner> -t INT 
+
+Options:
+  -c <miRNA|kraken|assemble>        Choose analysis
+  -a <bwa|bowtie|bowtie2|hisat2>        Choose aligner
+  -i <str>                              Input directory path
+  -o <str>                              Output directory path
+  -t <int>                              Number of threads
+  -m <first|second>                     miRNA pipeline choise
+  -h                                    Help message ( This message ) 
+"
+
+# function to print usage message and exits 
+usage() {
+    echo -e "$__usage" 1>&2; exit 1
+}
+
+# assigns default value for miRNA analysis
+m="first"
+
+# get command line arguments using getopts built in function
+while getopts hm:i:o:t:a:c: OPTION
+do
+    case "${OPTION}"
+    in
+        a)
+                    a=${OPTARG}
+                    if [ "$a" == "bwa" ] || [ "$a" == "bowtie2" ] || [ "$a" == "bowtie" ] || [ "$a" == "hisat2" ]
+                    then 
+                        :
+                    else
+                        echo -e "${RED}$a is not a valid -a argument${NC}"
+                    usage
+                    fi
+                    ;;
+        c)
+                    c=${OPTARG}
+                    if [ "$c" == "miRNA" ] || [ "$c" == "kraken" ] || [ "$c" == "assemble" ]
+                    then 
+                        :
+                    else
+                        echo -e "${RED}$c is not a valid -c argument${NC}"
+                    usage
+                    fi
+                    ;;
+        i) INPUT=${OPTARG};; 
+        o) OUTPUT=${OPTARG};;
+        t) THREADS=${OPTARG};;
+        m) m=${OPTARG};;        
+        h) usage;;
+        \?) usage;;
+    esac
+done
+
+# checks if all mandatory arguments are called and prints usage if not
+if [ -z "${a}" ] || [ -z "${INPUT}" ] || [ -z "${OUTPUT}" ] || [ -z "${THREADS}" ] || [ -z "${c}" ]; then
+    usage
+fi
+
+# User conformation
+echo -e "${BLU}Alinger choosen  : $a${NC}"
+echo -e "${BLU}Analysis choosen : $c${NC}"
+echo -e "${BLU}Input Directory  : ${INPUT}${NC}"
+echo -e "${BLU}Output Directory : ${OUTPUT}${NC}"
+echo -e "${BLU}Number of Threads: ${THREADS}${NC}"
+continue_
+
+# checks which pipline to proceed with 
+
+elif [ "$c" == "miRNA" ];then
+    printf "${YEL}miRNA pipline is %s\n${NC}" "$m"
+    if [ "$m" == "first" ];then # checks for miRNA pipline 
+        miRNAtra1_pipeline $a $INPUT $THREADS $OUTPUT
+    elif [ "$m" == "second" ];then
+        miRNAtra2_pipeline $a $INPUT $THREADS $OUTPUT
+    else
+        echo -e "${YEL}No miRNA piplines choosen, first will continue${NC}"
+        usage
+    fi
+else
+usage
+fi
+
+echo -e "${GRE}analysis from main DONE${NC}"
