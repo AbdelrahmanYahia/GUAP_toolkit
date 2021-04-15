@@ -13,11 +13,11 @@ Usage: $(basename $0) [OPTIONS]
 GUAP -i <inputdir> -o <outputdir> -c <analysis> -a <aligner> -t INT 
 
 Options:
-  -c <miRNA|kraken|assemble>        Choose analysis
-  -a <bwa|bowtie|bowtie2|hisat2>        Choose aligner
+  -c <miRNA|kraken>                     Choose analysis                default = kraken
+  -a <bwa|bowtie|bowtie2|hisat2>        Choose aligner                 default = miRNA
   -i <str>                              Input directory path
   -o <str>                              Output directory path
-  -t <int>                              Number of threads
+  -t <int>                              Number of threads              default = 50
   -m <first|second>                     miRNA pipeline choise
   -h                                    Help message ( This message ) 
 "
@@ -29,7 +29,9 @@ usage() {
 
 # assigns default value for miRNA analysis
 m="first"
-
+a="bowtie2"
+c="kraken"
+THREADS=50
 # get command line arguments using getopts built in function
 while getopts hm:i:o:t:a:c: OPTION
 do
@@ -65,8 +67,11 @@ do
 done
 
 # checks if all mandatory arguments are called and prints usage if not
-if [ -z "${a}" ] || [ -z "${INPUT}" ] || [ -z "${OUTPUT}" ] || [ -z "${THREADS}" ] || [ -z "${c}" ]; then
+if [ -z "${INPUT}" ] || [ -z "${OUTPUT}" ] || [ -z "${THREADS}" ] || [ -z "${c}" ]; then
     usage
+fi
+if [ "$c" == "miRNA" ];then 
+    a="bowtie"
 fi
 
 # User conformation
@@ -79,6 +84,9 @@ continue_
 
 # checks which pipline to proceed with 
 
+if [ "$c" == "kraken" ]
+then
+    kraken_pipeline_prog $a $INPUT $THREADS $OUTPUT 
 elif [ "$c" == "miRNA" ];then
     printf "${YEL}miRNA pipline is %s\n${NC}" "$m"
     if [ "$m" == "first" ];then # checks for miRNA pipline 
