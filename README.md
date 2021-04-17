@@ -35,8 +35,6 @@
 
 ## Main workflow
 
----
-
 GUAP takes several options as shown in the following block:
 
 ```bash
@@ -56,8 +54,6 @@ Options:
 "
 ```
 
----
-
 
 ### Metagenomics pipeline using kraken:
 
@@ -69,7 +65,7 @@ The script will first check the number of samples and if they are paired ended o
 
 The main analysis starts by trimming samples using `trimmomatic` then aliging samples to refference human genome according user defined aligner, unmapped reads will then be extract from sorted bam file using `samtools` the unmapped reads will then be used with `kraken` with k2_pluspfp database, korona figure will then be generated from output file using `ktImportTaxonomy` 
 
----
+
 
 ### miRNA tradiotinal pipeline
 
@@ -83,7 +79,7 @@ The script will first check the number of samples and if they are paired ended o
 
 The main analysis starts by trimming samples using `cutadapt` then aliging samples to refference human genome using `bowtie` the resulted sam files of all samples will then be used to generate counts using `featureCounts` and file will be modified by the command `tail -n +2 all.counts | cut -f 1,7- > all.txt` .
 
----
+
 
 ### miRNA supervised pipeline
 
@@ -112,4 +108,3 @@ All counts files from mibase and mapped to genome are then merged together using
 7. mirbase annotation: human gff3 file 
 8. miRNA names list
 
----
