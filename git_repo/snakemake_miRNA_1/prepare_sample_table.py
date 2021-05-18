@@ -1,0 +1,56 @@
+#! /usr/bin/env python
+import os
+import logging
+import pandas as pd
+from collections import defaultdict
+
+
+def get_sample_files(path,outfile='samples.tsv'):
+    samples = defaultdict(dict)
+    seen = set()
+    for dir_name, sub_dirs, files in os.walk(os.path.abspath(path)):
+        for fname in files:
+
+            if ".fastq" in fname or ".fq" in fname:
+
+                sample_id = fname.split(".fastq")[0].split(".fq")[0]
+
+                fq_path = os.path.join(dir_name, fname)
+
+                if fq_path in seen: continue
+
+                if "_R2" in fname or "_r2" in fname:
+
+                    if 'R2' in samples[sample_id]:
+                        logging.error(f"Duplicate sample {sample_id} was found after renaming; skipping... \n Samples: \n{samples}")
+
+                    samples[sample_id]['R2'] = fq_path
+                else:
+                    if 'R1' in samples[sample_id]:
+                        logging.error(f"Duplicate sample {sample_id} was found after renaming; skipping... \n Samples: \n{samples}")
+
+                    samples[sample_id]['R1'] = fq_path
+
+
+    samples= pd.DataFrame(samples).T
+
+    if samples.isna().any().any():
+        logging.error(f"Missing files:\n {samples}")
+
+    if os.path.exists(outfile):
+        logging.error(f"Output file {outfile} already exists I don't dare to overwrite it.")
+        exit(1)
+    else:
+        samples.to_csv(outfile,sep='\t')
+
+
+    return samples
+
+
+if __name__ == '__main__':
+    import sys
+    print("Running prepare_sample_table.py. Usage: ./prepare_sample_table.py path_to_fastq.(gz)_files"
+          "\n"
+          "Expect files that contain R1 and R2 in the filename otherwise they are treated as single end.")
+    get_sample_files(sys.argv[1])
+    print("Done")

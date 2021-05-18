@@ -1,0 +1,9 @@
+
+sampletable: "samples.tsv"
+
+trimming:
+  adaptor: "TGGAATTCTCGGGTGCCAAGG"
+
+ref:
+  miRBase_annotation: "Data/genome_data/hsa.gff3"
+  hsa_genome: "/media/genomics/DB_Storage/db/miRNA/Index/human-Grch38-Ref/hg38"
