@@ -1,0 +1,14 @@
+import os
+import pandas as pd
+
+configfile: "config.yaml"
+
+include: "rules/miRNA_direct.smk"
+include: "rules/miRNA_second.smk"
+include: "rules/QC_cutadapt.smk"
+
+rule all:
+    input:
+        expand("OUT/rawQC/{sample}_fastqc.{extension}", sample=SAMPLES, extension=["zip","html"]),
+        "OUT/miRNA_direct/counts/final_counts.txt",
+        "all.csv"
