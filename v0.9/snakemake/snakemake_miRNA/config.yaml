@@ -1,0 +1,10 @@
+sampletable: "samples.tsv"
+
+trimming:
+  adaptor: "TGGAATTCTCGGGTGCCAAGG"
+
+indexes:
+  bowtie_index_hum: "/media/genomics/DB_Storage/db/miRNA/Index/human-Grch38-Ref/hg38"
+  bowtie_index_mirbase: "/media/genomics/DB_Storage/db/miRNA/Index/miRBase/mat_hsa.fa"
+  mirbase_annotation: "/media/genomics/DB_Storage/db/mirbase_hsa_gff/hsa.gff3"
+  miRBED: "/media/genomics/DB_Storage/db/miRNA/Index/hsa-genome-miRBase22v-onlymiRNAs-convforTagBAM.bed"
