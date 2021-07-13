@@ -39,7 +39,8 @@ GUAP takes several options as shown in the following block:
 
 ```bash
 __usage="
-Usage: GUAP [OPTIONS]
+GUAP v1.0
+Usage: $(basename $0) [OPTIONS]
 
 GUAP -i <inputdir> -o <outputdir> -c <analysis> -a <aligner> -t INT 
 
@@ -50,7 +51,10 @@ Options:
   -o <str>                              Output directory path
   -t <int>                              Number of threads              default = 50
   -m <first|second>                     miRNA pipeline choise
-  -h                                    Help message ( This message ) 
+  -e <bash|snakemake|nextflow>          use snakemake, nextflow or bash
+  -h                                    Help message ( This message )
+  -y                                    skip continue check
+  -k                                    Direct flag
 "
 ```
 
@@ -93,7 +97,7 @@ The script will first check the number of samples and if they are paired ended o
 
 The main analysis starts by trimming samples using `cutadapt` then aliging samples to samples using `bowtie` to mirbase database with options `bowtie -n 0 -l 32 --norc --best --strata -m 1 --threads $1 $bowtie_index_mirbase <input> --un <unmapped fastaname> -S <sam file>` then convert sam to sorted indexed bam file using `samtools` the bam file will then be xounted using `samtools idxstats | cut-f1,3` to counts file. The unmapped reads wil then be aligned using `bowtie` to human genome using the command `bowtie -n 1 -l 32 --norc --best --strata -m 1 --threads $1 $bowtie_index_hum <input> -S <output>` then the sam file will be converted to bam and tagged using the command `bedtools tag -i <input> -files $hsa-genome-miRBase22v-onlymiRNAs-convforTagBAM.bed -names -tag XQ > <tagged_bam>` the output will be a tagged bam file. to count the file a list of all miRNA names is looped and counted each one using the command `samtools view $i | grep $j | wc -l` which `i` is the sample name and `j` is miRNA name. 
 
-All counts files from mibase and mapped to genome are then merged together using `merge.py` python script. This script takes the names of the samples and creates a dictionary, with keys > sample names and values > dictionary with keys > mirna name and value > counts data. The data are filled by firstly looping on all mirbase files and generating counts then looping on all genome files and adding the value of each mirna name to there corresponding values. the resulted dictionary is then exported as a CSV file with all counts data. 
+All counts files from mirbase and mapped to genome are then merged together using `merge.py` python script. This script takes the names of the samples and creates a dictionary, with keys > sample names and values > dictionary with keys > mirna name and value > counts data. The data are filled by firstly looping on all mirbase files and generating counts then looping on all genome files and adding the value of each mirna name to there corresponding values. the resulted dictionary is then exported as a CSV file with all counts data. 
 
 ---
 
