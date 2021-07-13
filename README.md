@@ -87,7 +87,6 @@
         ├── count_human.sh
         ├── merge.py
         └── prepare_sample_table.py
-        
     ```
 
 ---
