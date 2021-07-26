@@ -102,7 +102,7 @@ printpca <- function(preproces){
   print(plotp)
 }
 #######   functions to get figures   #######
-get_RUN_figs <- function(RUN, name="fig_"){
+get_RUN_figs <- function(RUN){
   preproces <- RUN$preproces
   res <- RUN$deseq2_out$raw.deseq2.res
   res.degs <- RUN$deseq2_out$results.filterred
