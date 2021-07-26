@@ -115,7 +115,8 @@ get_RUN_figs <- function(RUN){
   m2=scale(t(exp.degs),center=T,scale=T)
   m2=t(m2)
   pheatmap(m2, fontsize_row = 5,fontsize_col = 9,
-           cluster_rows=F, cluster_cols=F, scale = "none")
+           cluster_rows=F, cluster_cols=F, scale = "none",
+           color = colorRampPalette(c("mintcream",  "steelblue4"))(50))
 
   volc <- EnhancedVolcano(res,
                           title = "",
