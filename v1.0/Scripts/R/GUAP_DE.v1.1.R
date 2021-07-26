@@ -13,7 +13,9 @@ library("RColorBrewer")
 library("PCAtools")
 library("WGCNA")
 library("EnhancedVolcano")
-
+library("tidyverse")
+library("hrbrthemes")
+library("viridis")
 ###########  DE deseq2  ####################
 DE_deseq2 <- function(target, pheno.data, cond1, cond2, design){
   # get normalized data for visualization
@@ -48,6 +50,25 @@ preproces <- function(all_samples_Count, clinical, c_zeros=1, s_zeros=1, S="s", 
   miRNA_names <- unique(c(rownames(c.counts), rownames(s.counts)))
   target <- all_samples_Count[,c(c.samples,s.samples)]
   target <- target[rownames(target) %in% miRNA_names, ]
+  log_target <- log(target,10)
+  log_target <- mutate_all(log_target, function(x) as.numeric(x))
+  
+  print(log_target %>% 
+    pivot_longer(cols = names(log_target), 
+                 names_to = "gene", 
+                 values_to = "expression") %>% 
+    ggplot( aes(x=gene, y=expression, fill=gene)) +
+    geom_boxplot() +
+    scale_fill_viridis(discrete = TRUE, alpha=0.6) +
+    geom_jitter(color="black", size=0.4, alpha=0.9) +
+    theme_ipsum() +
+    theme(
+      legend.position="none",
+      plot.title = element_text(size=11)
+    ) +
+    ggtitle("expression (log10)") +
+    xlab("") +
+    ylab(""))
   outer <- list("target" = target, "pheno.sub" = pheno.sub)
   return(outer)
 }
@@ -109,15 +130,15 @@ get_RUN_figs <- function(RUN){
   exp.degs <- RUN$exp.degs
   
   printpca(preproces)
-
+  
   plotClusterTreeSamples(datExpr=t(preproces$target))
-
+  
   m2=scale(t(exp.degs),center=T,scale=T)
   m2=t(m2)
   pheatmap(m2, fontsize_row = 5,fontsize_col = 9,
-           cluster_rows=F, cluster_cols=F, scale = "none",
-           color = colorRampPalette(c("mintcream",  "steelblue4"))(50))
-
+           cluster_rows=T, cluster_cols=T, scale = "none",
+           color = colorRampPalette(c("mintcream",  "steelblue4"))(50), border_color=NA)
+  
   volc <- EnhancedVolcano(res,
                           title = "",
                           subtitle = bquote(italic(Volcanoplot)),
@@ -136,7 +157,7 @@ get_RUN_figs <- function(RUN){
                           drawConnectors = TRUE,
                           widthConnectors = 0.75)
   print(volc)
-
+  
 }
 ############################################
 runfull<- function(all_human_Count, clinical,s=1, c=1, S="A", C="D", name= "AvD"){
@@ -161,7 +182,8 @@ names(all_human_Count) <- gsub(x = names(all_human_Count), pattern = dirstr, rep
 
 ############################################
 # run analysis
-proc <- preproces(all_human_Count, clinical,1,1, S="f", C="t")
+proc <- preproces(all_human_Count, clinical,2,2, S="pts", C="ptc")
 proc$pheno.sub
 RUNrez <- RUN(proc)
 get_RUN_figs(RUNrez)
+
