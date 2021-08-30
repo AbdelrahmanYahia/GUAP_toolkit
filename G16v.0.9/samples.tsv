@@ -1,3 +1,0 @@
-sample-id	forward-absolute-filepath	reverse-absolute-filepath
-P01-1	$PWD/samples/P01-1_S1_L001_R1_001.fastq	$PWD/samples/P01-1_S1_L001_R2_001.fastq
-P01-2	$PWD/samples/P01-2_S2_L001_R1_001.fastq	$PWD/samples/P01-2_S2_L001_R2_001.fastq
