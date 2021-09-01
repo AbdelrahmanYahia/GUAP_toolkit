@@ -1,14 +1,34 @@
-library("tidyverse")
-library("qiime2R")
+library("dada2")
 library("phyloseq")
+library("Biostrings")
 library("ggplot2")
+library("vegan")
+library("decontam")
+library("knitr")
+library("BiocStyle")
+library("DECIPHER")
+library("phangorn")
+library("gridExtra")
+library("viridis")
+library("hrbrthemes")
+library("tidyverse")
+library("metagMisc")
+library("ComplexHeatmap")
 library("microbiome")
+library("eulerr")
+library("microbiomeutilities")
+library("qiime2R")
+library("ggtree")
+library("ggtreeExtra")
 
 #############################################
-# import data 
+# import data ls 
 SVs<-read_qza("QIIME2/table.qza")
 metadata<-read_q2metadata("sample-metadata.tsv")
+samdf <- metadata
+rownames(metadata) <- metadata$SampleID
 taxonomy<-read_qza("QIIME2/classify/taxonomy.qza")
+tree <- read_qza("QIIME2/align/rooted-tree.qza")$data
 
 ps <- qza_to_phyloseq(
   features="QIIME2/table.qza",
@@ -16,12 +36,72 @@ ps <- qza_to_phyloseq(
   metadata = "sample-metadata.tsv"
 )
 
+ps <- phyloseq(ps@otu_table, ps@tax_table, sample_data(metadata), read_tree(tree))
+
+############# from downstream only #############
+
+# filter NA till genus level
+# aggregate taxa @ genus level
+
+# rarefication
+# rarecurve(t(otu_table(ps)),label = F)
+rare_data <- rarefy_even_depth(ps, rngseed =1, sample.size = 25000)
+pseq2 <- aggregate_taxa(rare_data, "Genus") 
+
+GP <- prune_taxa(taxa_sums(rare_data) > 25, rare_data)
+mergedGP <- merge_samples(GP, "condition")
+mergedGP <- tax_glom(mergedGP,"Genus")
+mergedGP@sam_data$condition <- c("21-Days", "7-Days", "Before Treatment")
+plot_tree(mergedGP, color="condition",base.spacing=0.006,nodelabf=nodeplotblank, label.tips="Genus",text.size = 2)
 
 
-psf <- subset_taxa(ps, !is.na(Genus) & !Genus %in% c("", "uncharacterized", NA, "unknow", "Unknown"))
-pseq2 <- aggregate_taxa(psf, "Genus") 
 
-rare_data <- rarefy_even_depth(ps, rngseed =1 , sample.size = 12000)
+melt_simple <- psmelt(mergedGP) %>%
+  filter(Abundance < 1000000) %>%
+  select(OTU, val=Abundance)
+
+p <- ggtree(mergedGP, layout="fan", open.angle=10) + 
+  geom_tippoint(mapping=aes(color=Genus), 
+                size=1.5,
+                show.legend=FALSE)
+p <- rotate_tree(p, -90)
+
+p <- p +
+  geom_fruit(
+    data=melt_simple,
+    geom=geom_boxplot,
+    mapping = aes(
+      y=OTU,
+      x=val,
+      group=label,
+      fill=Genus,
+    ),
+    size=.2,
+    outlier.size=0.5,
+    outlier.stroke=0.08,
+    outlier.shape=21,
+    axis.params=list(
+      axis       = "x",
+      text.size  = 1.8,
+      hjust      = 1,
+      vjust      = 0.5,
+      nbreak     = 3,
+    ),
+    grid.params=list()
+  ) 
+
+p <- p +
+  scale_fill_discrete(
+    name="Genus",
+    guide=guide_legend(keywidth=0.8, keyheight=0.8, ncol=1)
+  ) +
+  theme(
+    legend.title=element_text(size=9), # The title of legend 
+    legend.text=element_text(size=7) # The label text of legend, the sizes should be adjust with dpi.
+  )
+p
+
+
 
 # plot alpha and beta diversity of rarefied data
 plot_richness(rare_data , measures = "Shannon", color = "condition")+
@@ -35,40 +115,42 @@ jaccard <- ordinate(rare_data, method ="PCoA", distance = "jaccard")
 
 plot_ordination(rare_data, bray_curtis, color = "condition")+stat_ellipse()+
   ggtitle("Beta diversity (Bray-Curtis PCoA)")+ geom_point(size=3, alpha=1)
-plot_ordination(rare_data, bray_curtis, color ="condition")+
-  stat_ellipse()
 
-p2 = plot_ordination(rare_data, bray_curtis, type="condition", color="condition") 
-p2 + geom_polygon(aes(fill=condition)) + geom_point(size=2, alpha = 0.5) + ggtitle("samples")
+
+# p2 = plot_ordination(rare_data, bray_curtis, color="condition") 
+# p2 + geom_polygon(aes(fill=condition)) + geom_point(size=2, alpha = 0.5) + ggtitle("samples")
 
 
 # plot alpha and beta diversity of RAW data 
-plot_richness(psf , measures = "Shannon", color = "condition",shape = "Gender")+
+plot_richness(ps , measures = "Shannon", color = "condition")+
   facet_wrap("condition", scales = "free_x", nrow = 1)+
   ggtitle("Alpha diversity (Shannon)")+ geom_point(size=2, alpha=0.7)
 
-plot_richness(psf, x="condition", measures=c("Observed", "Shannon")) + geom_boxplot()
+plot_richness(ps, x="condition", measures=c("Observed", "Shannon")) + geom_boxplot()
 
-bray_curtis <- ordinate(psf, method = "PCoA")
-jaccard <- ordinate(psf, method ="PCoA", distance = "jaccard")
+bray_curtis <- ordinate(ps, method = "PCoA")
+jaccard <- ordinate(ps, method ="PCoA", distance = "jaccard")
 
-plot_ordination(psf, bray_curtis, color = "condition", shape = "Gender")+stat_ellipse()+
+plot_ordination(ps, bray_curtis, color = "condition")+stat_ellipse()+
   ggtitle("Beta diversity (Bray-Curtis PCoA)")+ geom_point(size=3, alpha=1)
-plot_ordination(psf, bray_curtis, color = "condition")+
-  stat_ellipse()
 
-p2 = plot_ordination(psf, bray_curtis, type="condition", color="condition", shape="Gender") 
-p2 + geom_polygon(aes(fill=condition)) + geom_point(size=2, alpha = 0.5) + ggtitle("samples")
+
+# p2 = plot_ordination(ps, bray_curtis, color="condition") 
+# p2 + geom_polygon(aes(fill=condition)) + geom_point(size=2, alpha = 0.5) + ggtitle("samples")
 
 # top 20 genus Heatmap 
 top20g <- names(sort(taxa_sums(pseq2), decreasing=TRUE))[1:20]
 ps.top20g <- transform_sample_counts(pseq2, function(OTU) OTU/sum(OTU))
 ps.top20g <- prune_taxa(top20g, ps.top20g)
 tablg <- (as.data.frame(otu_table(ps.top20g)))
-
+samdf <- (ps.top20g@sam_data)
+names(samdf) <-  c("sample_names","condition")
+metadata <- metadata[rownames(samdf),]
+metadata <- as.data.frame(metadata[,-1])
+names(metadata) <- "condition"
 p1 <-ComplexHeatmap::pheatmap(scale(tablg), annotation_col = metadata,
                               col = colorRampPalette(c("deepskyblue4", "mintcream"))(50),
-                              column_split = metadata$condition,
+                              column_split = samdf$condition,
                               cluster_rows = F, cluster_cols = F,
                               border_color = NA, scale = T)
 
@@ -77,88 +159,121 @@ par(mar = c(13, 4, 4, 2) + 0.1) # make more room on bottom margin
 N <- 20
 barplot(sort(taxa_sums(pseq2), T)[1:N]/nsamples(pseq2), las=2)
 
+# bar plot of raredata top 50 genus 
+colnames(tax_table(rare_data)) <- c("Kingdom", "Phylum", "Class", "Order", "Family",  "Genus","Species")
+genus <- tax_glom(rare_data, "Genus")
+genus2 <- transform_sample_counts(genus,function(x)100*x/sum(x))
+genus_sums <- names(sort(taxa_sums(genus2),TRUE)[1:50])
+genus3 <- prune_taxa(genus_sums, genus2)
+plot_bar(genus3, fill = "Genus")+geom_bar(aes(color=Genus, fill=Genus), stat="identity", position="stack") + theme(legend.position="bottom")+
+  facet_wrap("condition", scales = "free_x", nrow = 1)+
+  ggtitle("Top 50 genera")
 
-metadata<-read_q2metadata("sample-metadata.tsv")
-SVs<-read_qza("table.qza")$data
-taxonomy<-read_qza("taxonomy.qza")$data
+# venn diagram 
 
-SVs<-apply(SVs, 2, function(x) x/sum(x)*100) #convert to percent
+pseq.rel <- microbiome::transform(pseq2, "compositional") # raltive counts 
+disease_states <- unique(as.character(meta(pseq.rel)$condition))
+list_core <- c() # an empty object to store information
 
-SVsToPlot<-  
-  data.frame(MeanAbundance=rowMeans(SVs)) %>% #find the average abundance of a SV
-  rownames_to_column("Feature.ID") %>%
-  arrange(desc(MeanAbundance)) %>%
-  top_n(30, MeanAbundance) %>%
-  pull(Feature.ID) #extract only the names from the table
-
-SVs %>%
-  as.data.frame() %>%
-  rownames_to_column("Feature.ID") %>%
-  gather(-Feature.ID, key="SampleID", value="Abundance") %>%
-  mutate(Feature.ID=if_else(Feature.ID %in% SVsToPlot,  Feature.ID, "Remainder")) %>% #flag features to be collapsed
-  group_by(SampleID, Feature.ID) %>%
-  summarize(Abundance=sum(Abundance)) %>%
-  left_join(metadata) %>%
-  mutate(NormAbundance=log10(Abundance+0.01)) %>% # do a log10 transformation after adding a 0.01% pseudocount. Could also add 1 read before transformation to percent
-  left_join(taxonomy) %>%
-  mutate(Feature=paste(Feature.ID, Taxon)) %>%
-  mutate(Feature=gsub("[kpcofgs]__", "", Feature)) %>% # trim out leading text from taxonomy string
-  ggplot(aes(x=SampleID, y=Feature, fill=NormAbundance)) +
-  geom_tile() +
-  facet_grid(~`Sample-Sample-condition`, scales="free_x") +
-  theme_q2r() +
-  theme(axis.text.x=element_text(angle=45, hjust=1)) +
-  scale_fill_viridis_c(name="log10(% Abundance)")
-results<-read_qza("differentials.qza")$data
-
-results<-results %>% mutate(Significant=if_else(we.eBH<0.1,"*", ""))
-
-tree<-drop.tip(tree, tree$tip.label[!tree$tip.label %in% results$Feature.ID]) # remove all the features from the tree we do not have data for
-ggtree(tree, layout="circular") %<+% results +
-  geom_tippoint(aes(fill=diff.btw), shape=21, color="grey50")  +
-  geom_tiplab2(aes(label=Significant), size=10) +
-  scale_fill_gradient2(low="darkblue",high="darkred", midpoint = 0, mid="white", name="log2(fold-change") +
-  theme(legend.position="right")
+for (n in disease_states){ # for each variable n in DiseaseState
+  print(paste0("Identifying Core Taxa for ", n))
+  
+  ps.sub <- subset_samples(pseq.rel, condition == n) # Choose sample from DiseaseState by n
+  core_m <- core_members(ps.sub, # ps.sub is phyloseq selected with only samples from g 
+                         detection = 0.001, # 0.001 in at least 90% samples 
+                         prevalence = 0.35, include.lowest=F)
+  print(paste0("No. of core taxa in ", n, " : ", length(core_m))) # print core taxa identified in each DiseaseState.
+  list_core[[n]] <- core_m # add to a list core taxa for each group.
+  #print(list_core)
+}
+mycols <- c(nonCRC="#d6e2e9", CRC="#cbf3f0", H="#fcf5c7") 
+plot(venn(list_core),
+     fills = mycols)
+taxa_names(pseq.rel)[1:10]
 
 
+# bar plot of normalized per condition 
+bar_one <- plot_bar(microbiome::transform(rare_data, "compositional"), x="condition", fill="Genus") + facet_wrap(~condition, scales="free_x") + 
+  geom_bar(aes(color=Genus, fill=Genus), stat="identity", position="stack") + theme(legend.position="bottom")
+legend <- cowplot::get_legend(bar_one)
+plot.mpg <- bar_one + theme(legend.position='none')
+print(plot.mpg)
+grid.newpage()
+grid.draw(legend)
+
+# bar plot of normalized per condition 
+bar_one <- plot_bar(microbiome::transform(rare_data, "compositional"), x="condition", fill="Phylum") + facet_wrap(~condition, scales="free_x") + 
+  geom_bar(aes(color=Phylum, fill=Phylum), stat="identity", position="stack") + theme(legend.position="bottom")
+legend <- cowplot::get_legend(bar_one)
+plot.mpg <- bar_one + theme(legend.position='bottom')
+print(plot.mpg)
+grid.newpage()
+grid.draw(legend)
 
 
+# bar plot of normalized samples
+bar_one <- plot_bar(microbiome::transform(pseq2, "compositional"), fill="Genus") +
+  geom_bar(aes(color=Genus, fill=Genus), stat="identity", position="stack") + theme(legend.position="bottom")
+legend <- cowplot::get_legend(bar_one)
+plot.mpg <- bar_one + theme(legend.position='none')
+print(plot.mpg)
 
 
+# bar plot of top species per condition
+top20 <- names(sort(taxa_sums(pseq2), decreasing=TRUE))[1:20]
+ps.top20 <- transform_sample_counts(pseq2, function(OTU) OTU/sum(OTU))
+ps.top20 <- prune_taxa(top20, ps.top20)
+
+bar_one <- plot_bar(ps.top20, x="Genus",fill="Genus", facet_grid = ~condition) +
+  geom_bar(aes(color=Genus, fill=Genus), stat="identity", position="stack")
+legend <- cowplot::get_legend(bar_one)
+plot.mpg <- bar_one + theme(legend.position='none')
+print(plot.mpg)
 
 
+# abundance 
+plot_landscape(ps, "NMDS", "bray", col = "condition")
 
-
-
-library(tidyverse)
-library(qiime2R)
-
-metadata<-read_q2metadata("sample-metadata.tsv")
-uwunifrac<-read_qza("unweighted_unifrac_pcoa_results.qza")
-shannon<-read_qza("shannon_vector.qza")$data %>% rownames_to_column("SampleID") 
-
-uwunifrac$data$Vectors %>%
+save.image("QIIME2_import_viz.RData")
+################################################
+new_samples <- rare_data@sam_data
+uwunifrac<-read_qza("QIIME2/core-metrics-results/unweighted_unifrac_pcoa_results.qza")
+shannon<-read_qza("QIIME2/core-metrics-results/shannon_vector.qza")$data %>% rownames_to_column("SampleID") 
+rownames(shannon) <- shannon$SampleID
+p3 <- uwunifrac$data$Vectors %>%
   select(SampleID, PC1, PC2) %>%
-  left_join(metadata) %>%
+  left_join(new_samples) %>%
   left_join(shannon) %>%
-  ggplot(aes(x=PC1, y=PC2, color=`body-site`, shape=`reported-antibiotic-usage`, size=shannon)) +
+  ggplot(aes(x=PC1, y=PC2, color=condition)) +
   geom_point(alpha=0.5) + #alpha controls transparency and helps when points are overlapping
   theme_q2r() +
   scale_shape_manual(values=c(16,1), name="Antibiotic Usage") + #see http://www.sthda.com/sthda/RDoc/figure/graphs/r-plot-pch-symbols-points-in-r.png for numeric shape codes
   scale_size_continuous(name="Shannon Diversity") +
   scale_color_discrete(name="Body Site")
-ggsave("PCoA.pdf", height=4, width=5, device="pdf") # save a PDF 3 inches by 4 inches
+# ggsave("PCoA.pdf", height=4, width=5, device="pdf") # save a PDF 3 inches by 4 inches
+print(p3)
 
-plot_tree(ps, color = "condition", label.tips = "Phylum", size = "abundance", plot.margin = 0.5, ladderize = TRUE,text.size = 3)
+
+gplots::venn(list(metadata=metadata$SampleID, shannon=shannon$SampleID))
 
 
-prp11 <- ggplot(df, aes(fill=OTU, y=Abundance, x=Sample)) + 
-  geom_bar(position="stack", stat="identity") +
-  scale_fill_viridis(discrete = T) +
-  theme_ipsum() +
-  xlab("")
-legend <- cowplot::get_legend(prp11)
-plot.mpg <- prp11 + theme(legend.position='none')
-print(plot.mpg)
-# ggsave(prp11, file='prp11.pdf',device = cairo_pdf)
+metadata<-
+  metadata %>% 
+  left_join(shannon)
+rownames(metadata) <- metadata$SampleID
 
+to_remove <- metadata$SampleID[which(!metadata$SampleID %in% new_samples$SampleID)]
+
+for ( i in to_remove){
+  metadata <- subset(metadata, SampleID != i)
+}
+
+metadata %>%
+  ggplot(aes(x=condition, y=shannon$shannon_entropy, color=condition)) +
+  stat_summary(geom="errorbar", fun.data=mean_se, width=0) +
+  stat_summary(geom="line", fun.data=mean_se) +
+  stat_summary(geom="point", fun.data=mean_se) +
+  xlab("Days") +
+  ylab("Shannon Diversity") +
+  theme_q2r() + # try other themes like theme_bw() or theme_classic()
+  scale_color_viridis_d(name="Body Site") # use different color scale which is color blind friendly
