@@ -1,29 +1,28 @@
-echo -e "${RED}#############     summarize     ############${NC}"
-qiime feature-table summarize \
+eval $(parse_yaml ../config_downstream.yml)
+
+echo -e "${YEL}########  core-metrics-phylogenetic  #######${NC}"
+qiime diversity core-metrics-phylogenetic \
+  --i-phylogeny align/rooted-tree.qza \
   --i-table table.qza \
-  --o-visualization visualization/table.qzv \
-  --m-sample-metadata-file ../sample-metadata.tsv &
+  --p-sampling-depth ${core_met_phylo_samplingdepth} \
+  --m-metadata-file ../sample-metadata.tsv \
+  --output-dir core-metrics-results &
 
-qiime feature-table tabulate-seqs \
-  --i-data rep-seqs.qza \
-  --o-visualization visualization/rep-seqs.qzv &
-
-echo -e "${RED}#############     taxa plot     ############${NC}"
-
+echo -e "${YEL}#############     taxa plot     ############${NC}"
 qiime taxa barplot \
     --i-table table.qza \
     --i-taxonomy classify/taxonomy.qza \
     --m-metadata-file ../sample-metadata.tsv \
     --o-visualization visualization/bar_plot.qzv &
 
-qiime tools export --input-path classify/taxonomy.qza --output-path "./classify/taxonomy.tsv" &
+qiime tools export --input-path classify/taxonomy.qza --output-path "./classify/taxonomy" &
 
-echo -e "${RED}###############    tabulate   ##############${NC}"
+echo -e "${YEL}###############    tabulate   ##############${NC}"
 qiime metadata tabulate \
   --m-input-file classify/taxonomy.qza \
   --o-visualization visualization/taxonomy.qzv &
 
-echo -e "${RED}#######  diversity alpha-rarefaction  ######${NC}"
+echo -e "${YEL}#######  diversity alpha-rarefaction  ######${NC}"
 qiime diversity alpha-rarefaction \
   --i-table table.qza \
   --i-phylogeny align/rooted-tree.qza \
@@ -33,19 +32,19 @@ qiime diversity alpha-rarefaction \
 
 wait
 
-echo -e "${RED}########  alpha-group-significance  ########${NC}"
+echo -e "${YEL}########  alpha-group-significance  ########${NC}"
 qiime diversity alpha-group-significance \
   --i-alpha-diversity core-metrics-results/faith_pd_vector.qza \
   --m-metadata-file ../sample-metadata.tsv \
   --o-visualization visualization/faith-pd-group-significance.qzv &
 
-echo -e "${RED}########  evenness-group-significanc  ######${NC}"
+echo -e "${YEL}########  evenness-group-significanc  ######${NC}"
 qiime diversity alpha-group-significance \
   --i-alpha-diversity core-metrics-results/evenness_vector.qza \
   --m-metadata-file ../sample-metadata.tsv \
   --o-visualization visualization/evenness-group-significance.qzv &
 
-echo -e "${RED}##### unweighted-unifrac-subject-group #####${NC}"
+echo -e "${YEL}##### unweighted-unifrac-subject-group #####${NC}"
 qiime diversity beta-group-significance \
   --i-distance-matrix core-metrics-results/unweighted_unifrac_distance_matrix.qza \
   --m-metadata-file ../sample-metadata.tsv \
@@ -53,14 +52,14 @@ qiime diversity beta-group-significance \
   --o-visualization visualization/unweighted-unifrac-condition-significance.qzv \
   --p-pairwise &
 
-echo -e "${RED}###########      emperor plot     ##########${NC}"
+echo -e "${YEL}###########      emperor plot     ##########${NC}"
 qiime emperor plot \
   --i-pcoa core-metrics-results/unweighted_unifrac_pcoa_results.qza \
   --m-metadata-file ../sample-metadata.tsv \
   --p-custom-axes \
   --o-visualization visualization/unweighted-unifrac-emperor-days-since-experiment-start.qzvm &
 
-echo -e "${RED}##########    alpha and beta    ############${NC}"
+echo -e "${YEL}##########    alpha and beta    ############${NC}"
 qiime emperor plot \
   --i-pcoa core-metrics-results/bray_curtis_pcoa_results.qza \
   --m-metadata-file ../sample-metadata.tsv \

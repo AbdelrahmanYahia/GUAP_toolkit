@@ -9,16 +9,8 @@ threads: 60
 dada:
   trunclength:
     f: 290
-    r: 270
+    r: 230
 
   maxEE:
-    f: 8
-    r: 9
-
-
-alphararefaction:
-  maxdepth: 10000
-
-core_met_phylo:
-  samplingdepth: 25000
-
+    f: 9
+    r: 15
