@@ -4,13 +4,13 @@ trainset:
   minlength: 350
   maxlength: 580
 
-threads: 60
+threads: 8
 
 dada:
   trunclength:
-    f: 290
-    r: 230
+    f: 280
+    r: 270
 
   maxEE:
-    f: 9
-    r: 15
+    f: 8
+    r: 9
