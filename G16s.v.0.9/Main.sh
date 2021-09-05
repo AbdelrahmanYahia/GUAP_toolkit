@@ -29,14 +29,14 @@ error_cheker(){
 
 conda deactivate
 ############  R part ###########
-# echo -e "${YEL}########    DADA2 Rscript running   ########${NC}"
-# Rscript G16s.v0.9.R \
-#         -i "${PWD}/samples" -o "${PWD}/DADA2"\
-#         -p ${threads} \
-#         -t ${dada_trunclength_f} \
-#         -T ${dada_trunclength_r} \
-#         -e ${dada_maxEE_f} \
-#         -E ${dada_maxEE_r} -s > R.out
+echo -e "${YEL}########    DADA2 Rscript running   ########${NC}"
+Rscript G16s.v0.9.R \
+        -i "${PWD}/samples" -o "${PWD}/DADA2"\
+        -p ${threads} \
+        -t ${dada_trunclength_f} \
+        -T ${dada_trunclength_r} \
+        -e ${dada_maxEE_f} \
+        -E ${dada_maxEE_r} -s > R.out
 
 ###############################
 echo -e "${YEL}###########      QIIME import    ###########${NC}"
@@ -49,30 +49,30 @@ mkdir -p classify
 mkdir -p visualization
 mkdir -p align
 
-# qiime tools import \
-# --input-path ../DADA2/rep-seqs.fna \
-# --type 'FeatureData[Sequence]' \
-# --output-path rep-seqs.qza
+qiime tools import \
+--input-path ../DADA2/rep-seqs.fna \
+--type 'FeatureData[Sequence]' \
+--output-path rep-seqs.qza
 
-# echo -n "#OTU Table" | cat - ../DADA2/seqtab-nochim.txt > biom-table.txt
+echo -n "#OTU Table" | cat - ../DADA2/seqtab-nochim.txt > biom-table.txt
 
-# biom convert -i biom-table.txt -o table.biom --table-type="OTU table" --to-hdf5
+biom convert -i biom-table.txt -o table.biom --table-type="OTU table" --to-hdf5
 
-# qiime tools import \
-# --input-path table.biom \
-# --type 'FeatureTable[Frequency]' \
-# --input-format BIOMV210Format \
-# --output-path table.qza
-# ################################
-# echo -e "${YEL}#############     summarize     ############${NC}"
-# qiime feature-table summarize \
-#   --i-table table.qza \
-#   --o-visualization visualization/table.qzv \
-#   --m-sample-metadata-file ../sample-metadata.tsv &
+qiime tools import \
+--input-path table.biom \
+--type 'FeatureTable[Frequency]' \
+--input-format BIOMV210Format \
+--output-path table.qza
+################################
+echo -e "${YEL}#############     summarize     ############${NC}"
+qiime feature-table summarize \
+  --i-table table.qza \
+  --o-visualization visualization/table.qzv \
+  --m-sample-metadata-file ../sample-metadata.tsv &
 
-# qiime feature-table tabulate-seqs \
-#   --i-data rep-seqs.qza \
-#   --o-visualization visualization/rep-seqs.qzv &
+qiime feature-table tabulate-seqs \
+  --i-data rep-seqs.qza \
+  --o-visualization visualization/rep-seqs.qzv &
 
 source ../Process.sh 
 
