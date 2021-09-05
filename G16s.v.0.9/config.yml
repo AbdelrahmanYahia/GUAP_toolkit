@@ -8,9 +8,16 @@ threads: 8
 
 dada:
   trunclength:
-    f: 280
-    r: 270
+    f: 290
+    r: 220
 
   maxEE:
-    f: 8
-    r: 9
+    f: 9
+    r: 15
+
+deblur:
+  use: TRUE
+  trimlength: 520
+
+DAT:
+  metaDcolumn: condition

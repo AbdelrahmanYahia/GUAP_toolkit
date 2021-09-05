@@ -26,44 +26,52 @@ error_cheker(){
     fi
 }
 
-
-conda deactivate
-############  R part ###########
-echo -e "${YEL}########    DADA2 Rscript running   ########${NC}"
-Rscript G16s.v0.9.R \
-        -i "${PWD}/samples" -o "${PWD}/DADA2"\
-        -p ${threads} \
-        -t ${dada_trunclength_f} \
-        -T ${dada_trunclength_r} \
-        -e ${dada_maxEE_f} \
-        -E ${dada_maxEE_r} -s > R.out
-
-###############################
-echo -e "${YEL}###########      QIIME import    ###########${NC}"
-conda activate qiime2
-
 mkdir -p QIIME2
-cd QIIME2
-mkdir -p phyloseq
-mkdir -p classify
-mkdir -p visualization
-mkdir -p align
+mkdir -p QIIME2/phyloseq
+mkdir -p QIIME2/classify
+mkdir -p QIIME2/visualization
+mkdir -p QIIME2/align
+mkdir -p QIIME2/DAT
 
-qiime tools import \
---input-path ../DADA2/rep-seqs.fna \
---type 'FeatureData[Sequence]' \
---output-path rep-seqs.qza
+if [ "${deblur_use}" == "TRUE" ] || [ "${deblur_use}" == "True" ] || [ "${deblur_use}" == "T" ] || [ "${deblur_use}" == "true" ] 
+then
+    conda activate qiime2
+    cd QIIME2
+    source ../deblur.sh
+else
+    conda deactivate
+    ############  R part ###########
+    echo -e "${YEL}########    DADA2 Rscript running   ########${NC}"
+    Rscript G16s.v0.9.R \
+            -i "${PWD}/samples" -o "${PWD}/DADA2"\
+            -p ${threads} \
+            -t ${dada_trunclength_f} \
+            -T ${dada_trunclength_r} \
+            -e ${dada_maxEE_f} \
+            -E ${dada_maxEE_r} -s > R.out
+    
+    ###############################
 
-echo -n "#OTU Table" | cat - ../DADA2/seqtab-nochim.txt > biom-table.txt
+    conda activate qiime2
+    cd QIIME2
+    echo -e "${YEL}###########      QIIME import    ###########${NC}"
+    qiime tools import \
+    --input-path ../DADA2/rep-seqs.fna \
+    --type 'FeatureData[Sequence]' \
+    --output-path rep-seqs.qza
 
-biom convert -i biom-table.txt -o table.biom --table-type="OTU table" --to-hdf5
+    echo -n "#OTU Table" | cat - ../DADA2/seqtab-nochim.txt > biom-table.txt
 
-qiime tools import \
---input-path table.biom \
---type 'FeatureTable[Frequency]' \
---input-format BIOMV210Format \
---output-path table.qza
-################################
+    biom convert -i biom-table.txt -o table.biom --table-type="OTU table" --to-hdf5
+
+    qiime tools import \
+    --input-path table.biom \
+    --type 'FeatureTable[Frequency]' \
+    --input-format BIOMV210Format \
+    --output-path table.qza
+fi
+###############################
+
 echo -e "${YEL}#############     summarize     ############${NC}"
 qiime feature-table summarize \
   --i-table table.qza \
@@ -123,9 +131,11 @@ cd phyloseq
 mv tree.nwk rooted_tree.nwk
 cd ../
 
-
 continue_
 source ../Downstream.sh
+
+source ../DAT.sh
+
 cd core-metrics-results
 for i in *.qzv
 do
