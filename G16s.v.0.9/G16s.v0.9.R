@@ -55,16 +55,18 @@ filtRs <- file.path(path, "filtered", paste0(sample.names, "_R_filt.fastq.gz"))
 names(filtFs) <- sample.names
 names(filtRs) <- sample.names
 write(paste0("\033[0;", 32, "m","Filter and Trim started...","\033[0m"), stderr())
+# write(paste0("\033[0;", 32, "m","parameters are: ",opt$trunclenf,opt$trunclenr,opt$maxeef,opt$maxeer,"\033[0m"), stderr())
 
 out <- filterAndTrim(fnFs, filtFs, fnRs, filtRs, truncLen=c(opt$trunclenf,opt$trunclenr),
                      maxN=0, truncQ=2, rm.phix=TRUE, maxEE=c(opt$maxeef,opt$maxeer),
                      compress=TRUE, multithread=opt$threads, verbose=opt$verbose)
 
 write(paste0("\033[0;", 32, "m","Learn errors started...","\033[0m"), stderr())
-errF <- learnErrors(filtFs, multithread=opt$threads, nbases=90000, verbose=opt$verbose)
-errR <- learnErrors(filtRs, multithread=opt$threads, nbases=90000, verbose=opt$verbose)
+errF <- suppressMessages(learnErrors(filtFs, multithread=opt$threads, nbases=90000, verbose=opt$verbose))
+errR <- suppressMessages(learnErrors(filtRs, multithread=opt$threads, nbases=90000, verbose=opt$verbose))
 
-suppressMessages(plotErrors(errF, nominalQ=TRUE))
+# suppressMessages(plotErrors(errF, nominalQ=TRUE))
+# suppressMessages(plotErrors(errR, nominalQ=TRUE))
 
 dadaFs <- dada(filtFs, err=errF, multithread=opt$threads, verbose=opt$verbose)
 dadaRs <- dada(filtRs, err=errR, multithread=opt$threads, verbose=opt$verbose)
@@ -78,12 +80,13 @@ seqtab <- makeSequenceTable(mergers)
 write(paste0("\033[0;", 32, "m","remove chimera started...","\033[0m"), stderr())
 seqtab.nochim <- removeBimeraDenovo(seqtab, method="consensus", multithread=opt$threads, verbose=opt$verbose)
 
-chim_perc <- (sum(seqtab.nochim)/sum(seqtab)) * 100
-print(paste("chimera % = ",round(chim_perc,2)))
-write(paste0("\033[0;", 33, "m","chimera % = ",round(chim_perc,2),"\033[0m"), stderr())
-save.image(paste0(outdir,"/",opt$name,".RData"))
+chim_perc <- (sum(seqtab.nochim)/sum(as.data.frame(out)$reads.in)) * 100
+print(paste("filterred reads % = ",round(chim_perc,2)))
+write(paste0("\033[0;", 33, "m","filterred reads % = ",round(chim_perc,2),"\033[0m"), stderr())
+
 getN <- function(x) sum(getUniques(x))
 track <- cbind(out, sapply(dadaFs, getN), sapply(dadaRs, getN), sapply(mergers, getN), rowSums(seqtab.nochim))
+# If processing a single sample, remove the sapply calls: e.g. replace sapply(dadaFs, getN) with getN(dadaFs)
 colnames(track) <- c("input", "filtered", "denoisedF", "denoisedR", "merged", "nonchim")
 rownames(track) <- sample.names
 track <- as.data.frame(track)
@@ -92,7 +95,7 @@ write(paste0("\033[0;", 32, "m","writing output...","\033[0m"), stderr())
 write.csv(track, file = paste0(outdir,"/stats.csv"), quote = FALSE)
 write.table(t(seqtab.nochim), paste0(outdir,"/seqtab-nochim.txt"), sep="\t", row.names=TRUE, col.names=NA, quote=FALSE)
 uniquesToFasta(seqtab.nochim, fout=paste0(outdir,'/rep-seqs.fna'), ids=colnames(seqtab.nochim))
-
+save.image(paste0(outdir,"/",opt$name,".RData"))
 ################       downstream analysis    ##################################
 ###### check counts #####
 write(paste0("\033[0;", 32, "m","Generating figures...","\033[0m"), stderr())
