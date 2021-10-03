@@ -1,0 +1,56 @@
+indexes:
+  bowtie_index_hum: "/media/genomics/DB_Storage/db/miRNA/Index/human-Grch38-Ref/hg38"
+  bowtie_index_mirbase: "/media/genomics/DB_Storage/db/miRNA/Index/miRBase/mat_hsa.fa"
+  mirbase_annotation: "/media/genomics/DB_Storage/db/mirbase_hsa_gff/hsa.gff3"
+  miRBED: "/media/genomics/DB_Storage/db/miRNA/Index/hsa-genome-miRBase22v-onlymiRNAs-convforTagBAM.bed"
+  kraken_db: "/media/genomics/DB_Storage/db/Kraken2/k2_pluspfp_20210127"
+  bwa_index: "/home/genomics/Documents/DR_Amany/new/BWA_Index/GRCh38_latest_genomic.fna"
+  hisat2_index: "/media/genomics/old/Data/Genomes/Homo_sapiens/UCSC/hg19/Sequence/Hisat2_human_genome/genome"
+  bowtie2_index: "/media/genomics/Data/old/Genomes/Homo_sapiens/UCSC/hg19/Sequence/bowtie2_index/genome"
+  trainclassifier:
+    seqs: "/media/genomics/DB_Storage/db/16s-dbs/QIIME2_silva/silva-138-99-seqs.qza"
+    taxa: "/media/genomics/DB_Storage/db/16s-dbs/QIIME2_silva/silva-138-99-tax.qza"
+  classifier: "/home/gen/Desktop/Analysis/16s/AUC/AUC/Silva_classifier.qza"
+
+  
+
+trimmomatic:
+  threads: 8
+  SLIDINGWINDOW: SLIDINGWINDOW:4:10
+  MINLEN: MINLEN:30
+
+miRNA:
+  cutadapt1: "--minimum-length 23 -a TGGAATTCTCGGGTGCCAAGG"
+
+
+# 16s
+trainset:
+  train: FALSE
+  fprimer: CCTACGGGNGGCWGCAG
+  rprimer: GACTACHVGGGTATCTAATCC
+  minlength: 350
+  maxlength: 580
+
+threads: 8
+
+dada:
+  trunclength:
+    f: 0
+    r: 0
+  trim:
+    l: 0
+    r: 0
+
+  maxEE:
+    f: 8
+    r: 9
+
+deblur:
+  use: FALSE
+  trimlength: 230
+
+alphararefaction:
+  maxdepth: 150000
+
+core_met_phylo:
+  samplingdepth: 25000
