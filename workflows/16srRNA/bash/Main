@@ -1,0 +1,121 @@
+#!/bin/bash
+
+source ${myfolder}/workflows/common/bash/QC.sh
+
+for f in ${myfolder}/workflows/16s/bash/*.sh ; do
+	source $f 
+done
+
+#############################
+
+run_16s() {
+
+	max_n_samples=$(( $threads / 4 ))
+	if [[ $max_n_samples -eq 0 ]] ; then max_n_samples=1 ; fi
+	INPUT=${path}
+	OUTPUT=${working_dir}
+	touch "${OUTPUT}/.checker_array.txt"
+	
+	R1s=$( tail -n +2 ${OUTPUT}/samples.tsv | while read -r uniquename id restofname extension R1 R2 tail PE path R; do echo "$R1"; done ) 
+	R2s=$( tail -n +2 ${OUTPUT}/samples.tsv | while read -r uniquename id restofname extension R1 R2 tail PE path R; do echo "$R2"; done ) 
+	
+	cd ${OUTPUT}
+
+	if [ $compressed == "True" ]; then 
+		parallel_gunzip ${INPUT} ${threads} >> log.txt
+	fi
+	
+	ext=${ext%'.gz'}''
+	R1s=$( tail -n +2 ${OUTPUT}/samples.tsv | while read -r uniquename id restofname extension R1 R2 tail PE path R; do echo "${R1%'.gz'}"; done ) 
+	R2s=$( tail -n +2 ${OUTPUT}/samples.tsv | while read -r uniquename id restofname extension R1 R2 tail PE path R; do echo "${R2%'.gz'}"; done ) 
+	
+	QC
+
+	mkdir -p QIIME2
+	mkdir -p QIIME2/phyloseq
+	mkdir -p QIIME2/classify
+	mkdir -p QIIME2/visualization
+	mkdir -p QIIME2/align
+
+	if [[ ${choose_classifier} == 'dada' ]]; then
+		classifydada="--assign-taxa --classifier ${classifier}"
+	else
+		classifydada=""
+	fi
+
+	if [ "${deblur}" == "True" ] || [ "${deblur}" == "true" ] 
+	then
+		cd QIIME2
+		Rscript ${GUAP_DIR}/bin/16s/scripts/generate_sample_table.R \
+			-i ${INPUT} -o . \
+			--r1-pattern ${R1_pattern} \
+			--r2-pattern ${R2_pattern} 
+
+		mkdir -p deblur
+		mkdir -p demux
+
+		step_checker 0 qiime_import_direct
+		step_checker 0 qiime_quality_filter
+		step_checker 0  "deblur_infer demux/demux-filtered.qza"
+
+	elif [ "${use_QIIME2}" == "True" ] || [ "${use_QIIME2}" == "true" ] 
+	then
+		cd QIIME2
+		Rscript ${GUAP_DIR}/bin/16s/scripts/generate_sample_table.R \
+			-i ${INPUT} -o . \
+			--r1-pattern ${R1_pattern} \
+			--r2-pattern ${R2_pattern} 
+
+		mkdir -p demux
+	
+		step_checker 0 qiime_import_direct
+
+		step_checker 0 "dada2_infer demux/paired-end-demux.qza"
+
+	else
+		###########  R part ###########
+		step_checker 0 dada2_R
+		###############################
+
+		cd QIIME2
+		step_checker 0 qiime2_import_dada
+	fi
+    error_cheker $? 0 "ASV generation workflow"
+
+	###############################
+	if [ "${trainset_train}" == "True" ] || [ "${trainset_train}" == "true" ] 
+	then
+		step_checker 0 train_classifier
+	fi
+
+	# main qiime2 analysis
+	if [[ ${choose_classifier} == 'dada' ]]; then
+		:
+	else
+		step_checker 0 classify_
+	fi
+	
+	step_checker 0 align_
+	step_checker 0 summrize
+	step_checker 1 taxa_plot
+	step_checker 1 export_biom
+	step_checker 1 final_handling
+	
+	if [[ ! -f ${metadata} ]] ; then : ; else 
+		step_checker 0 export_phyloseq
+	fi
+	
+	if [ "${export_figs}" == "true" ] ; then 
+		step_checker 1 export_ps_figs
+	fi
+
+}
+
+donwstreamonly(){
+	
+	OUTPUT=${working_dir}
+	cd ${OUTPUT}
+	cd QIIME2
+	performe_downstream
+
+}

@@ -1,0 +1,309 @@
+import os
+import pandas as pd
+
+PATH = config["path"]
+EXTT = config["ext"]
+EXT = EXTT.replace(".gz","")
+RS = config["R"]
+TAIL = config["tail"]
+sample_table_file=config.get('sampletable','samples.tsv')
+SampleTable = pd.read_table(sample_table_file,index_col=0)
+SAMPLES = list(SampleTable.index)
+SAMPLES_IDs = list(SampleTable.iloc[:, 0])
+ALL_THREADS = config["threads"]
+MEM = config["total_mem"]
+GUAP_FOLDER = config["GUAP_DIR"]
+aligners = config["aligner"]
+variant_callers = config["variant_caller"]
+samples_dir = PATH
+out_dir = config["working_dir"]
+ref_bwa = config["reference_index"]
+ref_bowtie2 = config["reference_index"]
+ref_fasta = config["reference_fasta"]
+known_variants = config["known_variants"]
+bed_file = config["bed_file"]
+workdir: config["working_dir"]
+
+def get_final_output(wildcards):
+    final_input = []
+    final_input = expand("mapping/{sample}_{aligner}.stats", sample = SAMPLES_IDs,aligner = aligners)
+    final_input.extend(expand("{variant_caller}/{sample}_{aligner}_picard.vcf", sample = SAMPLES_IDs,variant_caller = variant_callers,aligner = aligners)) 
+    if aligners == "GATK":
+        final_input.extend(expand("GATK/{sample}_{aligner}_picard.pdf", sample = SAMPLES_IDs,aligner = aligners))
+    return final_input
+
+rule all:
+    input: get_final_output
+        
+
+rule bwa_align:
+    input:
+        R1 = (f"{samples_dir}/{{sample}}_{RS}1{TAIL}{EXTT}"),
+        R2 = (f"{samples_dir}/{{sample}}_{RS}1{TAIL}{EXTT}")
+
+    output:
+        "mapping/bwa/{sample}.sam"
+
+    threads: config["threads_align"]
+    params:
+        index = ref_bwa,
+        fa = ref_fasta
+
+    log: "logs/{sample}_bwa.bwa.log"
+
+    benchmark: "benchamrks/{sample}_bwa.txt"
+
+    shell:
+        """
+        R1={input.R1}
+        SM=$(basename $R1 | cut -d"_" -f1)   
+        LB=$(basename $R1 | cut -d"_" -f1,2)  
+        PL="Illumina"
+        name=$(basename $R1 | cut -d'_' -f1)
+        RGID=$(head -n1 $R1 | sed 's/:/_/g' | cut -d "_" -f1,2,3,4)
+        PU=$RGID.$LB 
+        bwa mem -t {threads} -M \
+            -R "@RG\\tID:$RGID\\tSM:$SM\\tPL:$PL\\tLB:$LB\\tPU:$PU" {params.index} {input.R1} {input.R2} > {output} 2> {log}
+        """
+
+rule convert_sam:
+    input: 
+    	"mapping/bwa/{sample}.sam"
+    
+    output: 
+    	"mapping/bwa/{sample}.bam"
+    
+    shell: 
+    	"samtools view -hbo {output} {input}"
+
+
+rule bowtie_align:
+    input:
+        R1 = (f"{samples_dir}/{{sample}}_{RS}1{TAIL}{EXTT}"),
+        R2 = (f"{samples_dir}/{{sample}}_{RS}1{TAIL}{EXTT}")
+
+    output:
+        "mapping/bowtie2/{sample}.noRG.sam"
+
+    benchmark: "benchamrks/{sample}_bowtie2.txt"
+
+    threads: config["threads_align"]
+    params:
+        index = ref_bowtie2
+
+    shell:
+        """
+        bowtie2 --threads {threads} \
+            -x {params.index} -1 {input.R1} \
+            -2 {input.R2} -S {output}
+        """
+
+rule add_read_group:
+    input: "mapping/bowtie2/{sample}.noRG.sam"
+    output: "mapping/bowtie2/{sample}.bam"
+    shell:
+        """
+        PL="Illumina"
+
+        picard AddOrReplaceReadGroups -I {input} -O mapping/bowtie2/{wildcards.sample}.sam \
+            -SO coordinate -RGID {wildcards.sample} -LB {wildcards.sample} -PL $PL \
+            -PU {wildcards.sample} -SM {wildcards.sample} \
+            -CREATE_INDEX true
+        
+        samtools view -hbo {output} mapping/bowtie2/{wildcards.sample}.sam
+        """
+
+rule sort_bam:
+    input:
+        "mapping/{aligner}/{sample}.bam"
+
+    output:
+        "mapping/{aligner}/{sample}.sorted.bam"
+
+    shell:
+        "samtools sort {input} -o {output}"
+
+
+rule QC_alignment:
+    input:
+        "mapping/{aligner}/{sample}.sorted.bam"
+
+    output:
+        cov = "mapping/{sample}_{aligner}.cov",
+        stats = "mapping/{sample}_{aligner}.stats"
+
+    shell:
+        """
+        samtools depth {input} | awk '{{sum+=$3}} END {{print "Average = ",sum/NR, "No of covered Nuc = ", NR}}' > {output.cov}
+        samtools flagstat {input} > {output.stats}
+        """
+
+rule mrk_duplicates_picard:
+    input:
+        "mapping/{aligner}/{sample}.sorted.bam"
+
+    output:
+        bam = "mapping/{aligner}/{sample}_picard.dedub.bam",
+        matrix = "mapping/{aligner}/{sample}_picard.dedub.matrix"
+
+    log: 
+        "logs/{sample}_{aligner}_picard.dedub.log"
+
+    shell:
+        """
+        picard MarkDuplicates -I {input} \
+            -O {output.bam} \
+            -M {output.matrix} > {log}
+        """
+
+rule mpileup:
+    input:
+        "mapping/{aligner}/{sample}_picard.dedub.bam"
+
+    output:
+        "mpileup/{sample}_{aligner}_picard.vcf"
+    
+    threads: config["threads_calling"]
+
+    benchmark: "benchamrks/{sample}_{aligner}_mpileup.txt"
+
+    params:
+        fa = ref_fasta,
+        bed = bed_file
+
+    shell:
+        """
+        bcftools mpileup --threads 12 --regions-file {params.bed} \
+            -Ou -f {params.fa} {input} |\
+        bcftools call --threads 12 \
+            -Ov -mv > {output}
+        """
+
+rule lofreq:
+    input:
+        "mapping/{aligner}/{sample}_picard.dedub.bam"
+
+    output:
+        "lofreq/{sample}_{aligner}_picard.vcf"
+    
+    threads: config["threads_calling"]
+
+    benchmark: "benchamrks/{sample}_{aligner}_lofreq.txt"
+
+    params:
+        fa = ref_fasta,
+        bed = bed_file
+
+    shell:
+        """
+        lofreq call -f {params.fa} \
+                --out {output} {input} \
+                --call-indels 
+        """
+
+
+rule bqsr_dedub_report:
+    input: "mapping/{aligner}/{sample}_picard.dedub.bam"
+    output: "GATK/{sample}_{aligner}_picard.report"
+    params: 
+        known_sites = known_variants,
+        ref = ref_fasta
+    threads: 1
+    benchmark: "benchamrks/{sample}_{aligner}_GATK_pqsr.txt"
+    shell:
+        """
+        gatk --java-options "-Xmx8G" BaseRecalibrator -R {params.ref} \
+            -I {input} --known-sites {params.known_sites} \
+            -O {output} 
+        """
+
+rule BaseRecalibrator:
+    input: 
+        bam = "mapping/{aligner}/{sample}_picard.dedub.bam",
+        report = "GATK/{sample}_{aligner}_picard.report"
+    benchmark: "benchamrks/{sample}_{aligner}_GATK_apply_BQSR.txt"
+    output: "GATK/{sample}_{aligner}_picard.pqsr.bam"
+    threads: 1
+    params: 
+        known_sites = known_variants,
+        ref = ref_fasta
+    shell:
+        """
+        gatk --java-options "-Xmx8G" ApplyBQSR  -R {params.ref} \
+            -I {input.bam} --emit-original-quals \
+            -bqsr {input.report} -O {output} \
+            --add-output-sam-program-record
+        """
+
+rule bqsr_calibrated_report:
+    input: "GATK/{sample}_{aligner}_picard.pqsr.bam"
+    output: "GATK/{sample}_{aligner}_picard_pqsr.report"
+    params: 
+        known_sites = known_variants,
+        ref = ref_fasta
+    threads: 1
+    shell:
+        """
+        gatk --java-options "-Xmx8G" BaseRecalibrator -R {params.ref} \
+            -I {input} --known-sites {params.known_sites} \
+            -O {output} 
+        """
+
+rule AnalyzeCovariates:
+    input: 
+        raw = "GATK/{sample}_{aligner}_picard.report", 
+        bqsr = "GATK/{sample}_{aligner}_picard_pqsr.report"
+
+    output: "GATK/{sample}_{aligner}_picard.pdf"
+    threads: 1
+    shell:
+        """
+        gatk AnalyzeCovariates -before {input.raw} \
+            -after {input.bqsr} -plots {output}
+        """
+
+rule HaplotypeCaller:
+    input: "GATK/{sample}_{aligner}_picard.pqsr.bam"
+    output: "GATK/{sample}_{aligner}_picard.vcf.gz"
+    params: 
+        ref = ref_fasta,
+        bed = bed_file
+
+    threads: config["threads_calling"]
+
+    benchmark: "benchamrks/{sample}_{aligner}_GATK_HpTC.txt"
+
+    shell:
+        """
+        gatk --java-options "-Xmx14G -XX:ParallelGCThreads={threads}" HaplotypeCaller -R {params.ref} \
+            -L {params.bed} \
+            -I {input} --native-pair-hmm-threads {threads} -O {output}
+        """
+
+rule conda_env_choise:
+    shell:
+        """
+        ## check current set flags
+        echo "$-"
+        ## switch conda env
+        source ~/anaconda3/etc/profile.d/conda.sh && conda activate r-reticulate
+        ## Confirm that set flags are same as prior to conda activate command
+        echo "$-"
+
+        ## switch conda env again
+        conda activate dev
+        echo "$-"
+        which R
+        samtools --version
+
+        ## revert to previous: r-reticulate
+        conda deactivate
+        """
+
+rule gunzip_vcf:
+    input: "GATK/{sample}_{aligner}_picard.vcf.gz"
+    output: "GATK/{sample}_{aligner}_picard.vcf"
+    benchmark: "benchamrks/{sample}_{aligner}_GATK_gunzip.txt"
+
+    shell: "gunzip {input}"
+

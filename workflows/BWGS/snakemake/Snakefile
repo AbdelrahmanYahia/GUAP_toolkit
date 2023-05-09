@@ -1,0 +1,13 @@
+include: "main.smk"
+workdir: "OUT"
+
+SAMPLES = ["EM"]
+DIRS = ["unmapped_reads", "filterd"]
+ASSMBLIES = ["mapped_reads", "filterd"]
+
+rule all:
+    input:
+        expand("{sample}_{source}-Assembly/assembly.fasta", sample=SAMPLES, source=ASSMBLIES),
+        expand("kraken/{DIR}/{sample}.report", sample=SAMPLES, DIR=DIRS),
+        expand("assembly-mapping/{sample}_stats.txt", sample=SAMPLES),
+        expand("map_to_ref/{sample}_stats.txt", sample=SAMPLES)
