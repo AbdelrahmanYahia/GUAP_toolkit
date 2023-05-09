@@ -16,7 +16,7 @@ rule DE:
         name = config["name"],
         outdir = "Downstream"
     shell:
-        """Rscript {params.source_dir}/workflows/DE/GDEv1.2.R -i {input}\
+        """Rscript {params.source_dir}workflows/DE/GDEv1.2.R -i {input}\
          -o {params.outdir} --tab -c {params.clinical} -S {params.samplecol} \
          -C {params.controlcol} \
          -z {params.samplezeros} -x {params.controlzeros} -n {params.name}

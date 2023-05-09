@@ -249,7 +249,8 @@ def parse_input_args(args): # takes args (object) returns dict of args informati
         "GUAP_DIR": GUAP_DIR,
         "common_rules": f"{GUAP_DIR}/workflows/common/rules/"
     }
-
+    if "decompress" not in all_args:
+        all_args.update({"decompress":False})
     all_args.update(extra_info)
     # create config file 
     with open(f'{outpath}/config.yaml', 'w') as yaml_file:

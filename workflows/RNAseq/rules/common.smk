@@ -96,11 +96,9 @@ def get_final_output(wildcards):
     final_input.extend(expand("{aligner}/{sample}/{bamfilename}.stats", sample=samples,aligner=aligner, bamfilename=bamfilename))
     return final_input
 
-include: 'utils.smk'
 include: 'mapping_qc.smk'
 include: 'pseudo_aligners.smk'
 include: 'QC.smk'
 include: 'quant.smk'
 include: 'spliceaware_aligners.smk'
-include: 'trim.smk'
 include: 'DE.smk'

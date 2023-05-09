@@ -11,7 +11,7 @@ option_list = list(
               help="database to use with AnnotationHub"),
   make_option("--organism", type="character", default="Homo sapeins", metavar="character",
               help="organism to downlaod data for"),
-  make_option("--transcript", action="store_true",
+  make_option("--transcript", action="store_true",default=FALSE,
               help="data supplied is Ensemble transcripts")
 ); 
 #############################################

@@ -1,5 +1,6 @@
 from ..workflows import *
-
+from tqdm import tqdm  # import tqdm library for progress bar
+import snakemake
 class RNA(WorkflowCli):
     name = 'RNA'
     help = '''guap RNA -i/--input dir'''
@@ -337,3 +338,49 @@ guap RNA --input dir \\
             glogger.prnt_fatel("Error in snakemake dry run")
             print(f"{PRP}{runtime.elapsed()}{NC}") 
 
+
+    # def run(self, args):
+    #     if args.print_last_run:
+    #         with open(f"{GUAP_DIR}/.last_run.txt", 'r') as last_run:
+    #             lines = last_run.readlines()
+    #         last_command = lines[0]
+    #         print(f"python3 {GUAP_DIR}guap.py {last_command}")
+    #         exit()
+    #     all_args = parse_input_args(args)
+    #     snakemake_cmd = smk_cmd(all_args)
+    #     try:
+    #         if all_args['export_dag'] is True and all_args['dry_run'] != True:
+    #             if all_args['continue']:
+    #                 subprocess.run(f"snakemake --snakefile '{GUAP_DIR}/workflows/RNAseq/Snakefile' --configfile '{all_args['working_dir']}/config.yaml' -j {all_args['threads']} {all_args['smk_extra_args']}", shell=True)
+    #             else:
+    #                 # Get all the jobs from the workflow
+    #                 workflow = snakemake.workflow.Workflow()
+    #                 jobs = workflow.jobs
+
+    #                 # Run snakemake with progress bar
+    #                 with tqdm(total=len(jobs), desc="Snakemake progress") as pbar:
+    #                     for i in jobs:
+    #                         snakemake.run_job(i)
+    #                         # Update progress bar after each finished job
+    #                         pbar.update()
+
+    #                 subprocess.run(f"snakemake --snakefile '{GUAP_DIR}/workflows/RNAseq/Snakefile' --configfile '{all_args['working_dir']}/config.yaml' -j {all_args['threads']} {all_args['smk_extra_args']}", shell=True)
+
+    #             print(f"{PRP}{runtime.elapsed()}{NC}")
+    #         else:
+    #             subprocess.run(f"{snakemake_cmd} -q -n --rulegraph | dot -Tpng > '{all_args['working_dir']}/{all_args['name']}.png'", shell=True)
+    #             # Get all the jobs from the workflow
+    #             workflow = snakemake.workflow.Workflow()
+    #             jobs = workflow.jobs
+
+    #             # Run snakemake with progress bar
+    #             with tqdm(total=len(jobs), desc="Snakemake progress") as pbar:
+    #                 for i in jobs:
+    #                     snakemake.run_job(i)
+    #                     # Update progress bar after each finished job
+    #                     pbar.update()
+
+    #             print(f"{PRP}{runtime.elapsed()}{NC}")
+    #     except Exception as e:
+    #         glogger.prnt_fatel(f"Error in snakemake dry run\nException: \n{e}")
+    #         print(f"{PRP}{runtime.elapsed()}{NC}")
