@@ -8,37 +8,249 @@ class WES(WorkflowCli):
 
     def add_arguments(self, parser):
 
-        parser.add_argument('-i', '--input', help= "Input directory path", metavar='path', type=os.path.abspath)  
-        parser.add_argument('-o', '--output', help= "Output directory path", metavar='path', type=os.path.abspath)
+        # basic configuration
+        basic_conf = parser.add_argument_group(f'{CYN}basic config{NC}')
 
-        parser.add_argument('-t', '--threads', help= "Number of total no. of threads", type=int)
-        parser.add_argument('--threads-index', help= "Number of threads to use during indexing ref", type=int )
-        parser.add_argument('--threads-align', help= "Number of threads to use per sample aliging", type=int, default = 4)
-        parser.add_argument('--threads-calling', help= "Number of threads to use per sample variant caller", type=int, default = 4)
+        basic_conf.add_argument(
+            '-i', '--input', 
+            help="Input directory path", 
+            metavar='in path', 
+            type=os.path.abspath, 
+            required = not any(arg in ["--print-last-run"] for arg in sys.argv)
+        ) 
 
-        parser.add_argument('--aligner', help = "Choose aligner", choices=["bwa", "bowtie2"], type=str, default='bwa')
-        parser.add_argument('--variant-caller', help = "Choose variant caller", choices=["GATK", "mpileup", "lofreq"], type=str, default='GATK')
-        parser.add_argument('--bed-file', help='bed file path', metavar='path', type=os.path.abspath)
-        parser.add_argument('--reference-fasta',metavar='path', type=os.path.abspath, help="path to reference fasta file")
-        parser.add_argument('--reference-index',metavar='path', type=os.path.abspath, help="path to reference index")
-        parser.add_argument('--known-variants',metavar='path', type=os.path.abspath, help="path to reference fasta file")
+        basic_conf.add_argument(
+            '-o', '--output', 
+            help= "Output directory path", 
+            metavar='out path', 
+            type=os.path.abspath, 
+            required = not any(arg in ["--print-last-run"] for arg in sys.argv)
+        )  
 
-        parser.add_argument('--skip-QC', action='store_true', help="Skip QC step")
-        parser.add_argument('--index-reference', action='store_true', help="index reference")
 
-        parser.add_argument('--snakemake-dry-run', action='store_true', help="performs snakemake dry run")
-        parser.add_argument('--snakemake-dag', action='store_true', help="performs snakemake dry run and exports DAG")
-        parser.add_argument('--snakemake', dest='snakemake', action='store_true', help="Use snakemake workflow (ability to contiue) [default]")
-        parser.add_argument('--bash', dest='snakemake', action='store_false', help="Use bash scripts instead of snakemake")
+        # workflow configure
+        workflow_conf = parser.add_argument_group(f'{CYN}Workflow configure{NC}')
 
-        parser.add_argument('--continue', action='store_true', help="continue analysis when re-run")
-        parser.add_argument('--overwrite', action='store_true', help="overwrite output dir if exsits")
-        parser.add_argument('--verbose', action='store_true', help="verbose")
-        parser.add_argument('--quit', dest='verbose', action='store_false', help="print many output")
-        parser.add_argument('-n',"--name", default="GUAP-WES-Run", help='') 
+        workflow_conf.add_argument(
+            '--threads', 
+            metavar = "N",
+            help= "Number of total threads to use [default = all]", 
+            type=int,
 
-        parser.set_defaults(verbose=False)
-        parser.set_defaults(snakemake=True)
+        )
+
+        workflow_conf.add_argument(
+            '--reference-fasta',
+            metavar='path/to/file.fa',
+            type=os.path.abspath,
+            help="path to reference fasta file"
+        )
+
+        workflow_conf.add_argument(
+            '--bed-file', 
+            help='bed file path', 
+            metavar='path',
+            type=os.path.abspath
+        )
+
+        qc_conf = parser.add_argument_group(f'{BLU}QC configuration{NC}')
+
+        qc_conf.add_argument(
+            '--trimmomatic',
+            dest='trimmomatic',
+            action='store_true',
+            help="Use trimmomatic"
+        )
+
+        qc_conf.add_argument(
+            '--trim-t', 
+            help= "Number of threads to use during trim step", 
+            type=int ,
+            metavar = "N",
+            default= 4 
+        )
+
+        qc_conf.add_argument(
+            "--trim-min-length", 
+            type=int,
+            default=30,
+            metavar = "N",
+            help='trimmomatic min length [default = 30]'
+        )
+
+        qc_conf.add_argument(
+            "--slidingwindow-size", 
+            type=int,
+            default=4,
+            metavar = "N",
+            help='trimmomatic sliding window size [default = 4]'
+        )
+
+        qc_conf.add_argument(
+            "--slidingwindow-quality", 
+            type=int,
+            default=10,
+            metavar = "N",
+            help='trimmomatic sliding window quality score [default = 10]'
+        )
+
+        qc_conf.add_argument(
+            '--trimmomatic-extra-args',
+             type=str,
+            metavar="='-args'",
+            help="A string value of extra args for trimmomatic (must be used with = with no spaces (--trimmomatic-extra-args='-arg1 -arg2'))",
+            default=""
+        )
+
+
+        qc_conf.add_argument(
+            '--skip-QC',
+             action='store_true',
+             help="Skipp Fastqc step"
+        )
+
+        qc_conf.set_defaults(trimmomatic=False)
+
+        aligner_conf = parser.add_argument_group(f'{BLU}Aligner configuration{NC}')
+
+        aligner_conf.add_argument(
+            '--aligner', 
+            help = "Choose aligner [default = bwa]",
+            choices=["bwa", "bowtie2"], 
+            metavar = "bwa|bowtie2",
+            type=str,
+            default='bwa'
+        )
+
+        aligner_conf.add_argument(
+            '--threads-index', 
+            help= "Number of threads to use during indexing ref [default = 4]", 
+            type=int, 
+            default= 4,
+            metavar = "N",
+        )
+
+        aligner_conf.add_argument(
+            '--threads-align', 
+            help= "Number of threads to use during sample alignment [default = 4]", 
+            type=int, 
+            default= 4,
+            metavar = "N",
+        )
+
+        aligner_conf.add_argument(
+            '--aligner-extra-args', 
+            help = "Extra arguments for aligner, use it with no spaces and add = ( --aligner-extra-args='-arg1 -arg2' ) ",
+            type=str,
+            metavar = "'-args'",
+            default=""
+        )
+
+        aligner_conf.add_argument(
+            '--reference-index',
+            metavar='path/to/ref', 
+            type=os.path.abspath,
+            help="path to reference index"
+        )
+
+        variant_caller_conf = parser.add_argument_group(f'{BLU}Aligner configuration{NC}')
+
+        variant_caller_conf.add_argument(
+                '--variant-caller', 
+                help = "Choose variant caller", 
+                choices=["GATK", "mpileup", "lofreq"], 
+                type=str, 
+                default='GATK'
+        )
+
+        variant_caller_conf.add_argument(
+            '--known-variants',
+            metavar='path', 
+            type=os.path.abspath, 
+            help="path to reference fasta file"
+        )
+
+        variant_caller_conf.add_argument(
+            '--caller-extra-args', 
+            help = "Extra arguments for caller, use it with no spaces and add = ( --caller-extra-args='-arg1 -arg2' ) ",
+            type=str,
+            metavar = "'-args'",
+            default=""
+        )
+
+        variant_caller_conf.add_argument(
+            '--threads-calling', 
+            help= "Number of threads to use during variant calling [default = 4]", 
+            type=int, 
+            default= 4,
+            metavar = "N",
+        )
+
+
+
+        # Snakemake Options
+        snakemake_options = parser.add_argument_group(f'{CYN}Snakemake Options{NC}')
+
+        snakemake_options.add_argument(
+            '--dry-run', 
+            action='store_true', 
+            help="performs snakemake dry run"
+        )
+
+        snakemake_options.add_argument(
+            '--export-dag', 
+            action='store_true', 
+            help="performs snakemake dry run and exports DAG"
+        )
+
+        snakemake_options.add_argument(
+            "--smk-extra-args", 
+            metavar="='-args'",
+            help="A string value of extra args for snakemake(must be used with = with no spaces (--smk-extra-args='-arg1 -arg2'))",
+            default="", type=str
+        )
+
+        # other options
+        other_conf = parser.add_argument_group(f'{CYN}Other{NC}')
+
+        other_conf.add_argument(
+            '--continue', 
+            action='store_true', 
+            help="continue analysis when re-run"
+        )
+
+        other_conf.add_argument(
+            '--overwrite', 
+            action='store_true', 
+            help="overwrite output dir if exsits"
+        )
+
+        other_conf.add_argument(
+            '-n',"--name", 
+            default=f"RNA_run[{os.environ['start_time']}]", 
+            metavar = 'str',
+            help=f"Name of files [ default = RNA_run[date time] ]"
+        )
+
+        other_conf.add_argument(
+            '--verbose', 
+            action='store_true', 
+            help="verbose"
+        )
+
+        other_conf.add_argument(
+            '--quit', 
+            dest='verbose', 
+            action='store_false', 
+            help="print many output"
+        )
+
+        other_conf.add_argument(
+            '--print-last-run', 
+            action='store_true', 
+            help="Prints last run on screen"
+        )
+
 
     def run(self, args):
         if args.print_last_run:

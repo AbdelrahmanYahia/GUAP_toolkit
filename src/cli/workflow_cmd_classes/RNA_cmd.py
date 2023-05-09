@@ -34,11 +34,6 @@ guap RNA --input dir \\
             required = not any(arg in ["--print-last-run"] for arg in sys.argv)
         )  
 
-        basic_conf.add_argument(
-            '-L', '--last-run-params', 
-            help= "Uses Last Run commands, Except -i and -o", 
-            action='store_true'
-        ) 
 
         # workflow configure
         workflow_conf = parser.add_argument_group(f'{CYN}Workflow configure{NC}')

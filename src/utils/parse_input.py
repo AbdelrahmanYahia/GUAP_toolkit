@@ -246,7 +246,8 @@ def parse_input_args(args): # takes args (object) returns dict of args informati
         "R2_pattern": f"_{R}2_{tail}.{EXT}",
         "compressed" : compressed,
         "total_mem": all_mem,
-        "GUAP_DIR": GUAP_DIR
+        "GUAP_DIR": GUAP_DIR,
+        "common_rules": f"{GUAP_DIR}/workflows/common/rules/"
     }
 
     all_args.update(extra_info)

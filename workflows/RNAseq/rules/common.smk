@@ -1,37 +1,17 @@
 import os
 import pandas as pd
-# get options
-PATH = config["path"]
-EXT = config["ext"]
-RS = config["R"]
-TAIL = f"_{config['tail']}"
-sample_table_file=config.get('sampletable','samples.tsv')
-SampleTable = pd.read_table(sample_table_file,index_col=0)
-samples = list(SampleTable.index) # same as IDs
-files_R1s = list(SampleTable.iloc[:, 0])
-files_R2s = list(SampleTable.iloc[:, 8])
-samples_IDs = list(SampleTable.iloc[:, 2])
-samples_names = list(SampleTable.iloc[:, 1])
-ALL_THREADS = config["threads"]
-MEM = config["total_mem"]
-GUAP_FOLDER = config["GUAP_DIR"]
-samples_dir = PATH
+
+common_rules = config["common_rules"]
+include: f'{common_rules}/common.smk'
+
 ref_fasta = config["reference_fasta"]
 ref_gtf = config["gtf_file"]
 ref_index = config["reference_index"]
 aligner = config["aligner"]
 quantifier = config["quantifier"]
-R = [1, 2]
-R1_pattern = config["R1_pattern"]
-R2_pattern = config["R2_pattern"]
 bamfilename = "Aligned.sortedByCoord.out"
-source = PATH
-lane="_L001"
-working_dir = config["working_dir"]
-source_dir = config["GUAP_DIR"]
 dirstr = "star/"
 repattern = "/Aligned.sortedByCoord.out.bam"
-
 
 
 if aligner == 'hisat2':
@@ -42,6 +22,32 @@ elif aligner == 'kallisto':
     bamfilename = 'pseudoalignments'
     quantifier = "quant"
 
+def get_align_input(wildcards):
+    sample = wildcards.sample
+    units = SampleTable.loc[sample]
+    if config["trimmomatic"] is True:
+            mydict = dict(
+        zip(
+            ["R1", "R2"],
+                [
+                    f"trimmomatic/{sample}_{RS}1.{EXT}",
+                    f"trimmomatic/{sample}_{RS}2.{EXT}",
+                ],
+        )
+    )
+    else:
+        source = PATH
+
+        mydict = dict(
+            zip(
+                ["R1", "R2"],
+                [
+                    f"{config['input']}/{sample}_{units.sample_number}{lane}_{RS}1{TAIL}.{EXT}",
+                    f"{config['input']}/{sample}_{units.sample_number}{lane}_{RS}2{TAIL}.{EXT}",
+                ],
+            )
+        )
+    return mydict
 
 def get_final_output(wildcards):
     final_input = []
@@ -98,19 +104,3 @@ include: 'quant.smk'
 include: 'spliceaware_aligners.smk'
 include: 'trim.smk'
 include: 'DE.smk'
-
-# rule decompress:
-#     input: 
-#         f"reads/{{sample}}_{RS}{{R}}{EXTT}"
-#     output:
-#         temp(f"reads/{{sample}}_{RS}{{R}}{EXT}")
-#     shell:
-#         "gunzip {input}"
-        
-
-
-
-
-
-
-
