@@ -1,16 +1,9 @@
 from ..workflows import *
 
 class WES(WorkflowCli):
-    name = 'RNA'
-    help = '''guap RNA -i/--input dir'''
+    name = 'WES'
+    help = '''guap WES -i/--input dir'''
     usage = f"""{YEL}Basic Run Usage example:{NC}
-guap RNA --input dir \\
-        --output dir \\
-        --aligner [star|hisat2|kallisto|salmon] \\
-        --quantifier [htseq|featurecounts] \\
-        --gtf-file file \\
-        --reference-fasta file \\
-        --reference-index dir
         """
 
     def add_arguments(self, parser):
@@ -42,7 +35,6 @@ guap RNA --input dir \\
         parser.add_argument('--overwrite', action='store_true', help="overwrite output dir if exsits")
         parser.add_argument('--verbose', action='store_true', help="verbose")
         parser.add_argument('--quit', dest='verbose', action='store_false', help="print many output")
-        parser.add_argument("-h", "--help", action='store_true')
         parser.add_argument('-n',"--name", default="GUAP-WES-Run", help='') 
 
         parser.set_defaults(verbose=False)
