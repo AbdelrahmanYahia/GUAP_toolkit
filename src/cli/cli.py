@@ -1,7 +1,10 @@
 import argparse
-from . import workflows
-from ..utils.globals import *
 from ..gui import main
+from ..utils.globals import *
+from .workflow_cmd_classes.RNA_cmd import RNA
+from .workflow_cmd_classes.rRNA_cmd import rRNA
+from .workflow_cmd_classes.BWGS_cmd import BWGS
+from .workflow_cmd_classes.WES_cmd import WES
 
 # main cli class
 class Cli:
@@ -17,10 +20,10 @@ class Cli:
                                                 description="choose workflow", 
                                                 metavar="")
         GUI_subparser = subparsers.add_parser("GUI", help="launch GUI GUAPtoolkit")
-        rRNAworkflowCli = workflows.rRNA(subparsers)
-        WESworkflowCli = workflows.WES(subparsers)
-        RNAworkflowCli = workflows.RNA(subparsers)
-        WGSworkflowCli = workflows.WGS(subparsers)
+        rRNAworkflowCli = rRNA(subparsers)
+        WESworkflowCli = WES(subparsers)
+        RNAworkflowCli = RNA(subparsers)
+        WGSworkflowCli = BWGS(subparsers)
         
         # Set up top-level arguments
         self.parser.add_argument('--full-help', action='store_true', help='print help of all workflows')
