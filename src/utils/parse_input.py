@@ -10,7 +10,7 @@ import pandas as pd
 from collections import defaultdict
 # GUAP modules import
 from .globals import *
-
+import subprocess
 def check_extension(df): # takes pandas df and returns string
     # checks all files have same extension from pandas df, to use in generete sample table function
     uniques = df['ext'].unique()
@@ -249,6 +249,7 @@ def parse_input_args(args): # takes args (object) returns dict of args informati
         "GUAP_DIR": GUAP_DIR,
         "common_rules": f"{GUAP_DIR}/workflows/common/rules/"
     }
+
     if "decompress" not in all_args:
         all_args.update({"decompress":False})
     all_args.update(extra_info)
@@ -268,3 +269,80 @@ def parse_input_args(args): # takes args (object) returns dict of args informati
         with open(f"{GUAP_DIR}/.last_run.txt", "w") as f:
             f.write(command)
     return all_args
+
+
+def process_snakemake_standard_output(snakemake_cmd, outfilelog):
+    time_stamp_pattern = r'\[\w{3} \w{3} \d{2} \d{2}:\d{2}:\d{2} \d{4}\]'
+    rule_name_pattern = r'rule (\w+):$'
+    jobid_pattern = r'    jobid: (\d+)'
+    running_jobs = {}
+    finished_jobs = {}
+    proc = subprocess.Popen(f"{snakemake_cmd} ", shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+    def check_job_id(line, rule_name):
+        job_id_match = re.search(jobid_pattern, line)
+        if job_id_match:
+            job_number = job_id_match.group(1)
+            print(f"Job {job_number} of rule {rule_name} is currently running.")
+            running_jobs[job_number] = rule_name
+            check_next_line(line)
+        elif re.search(time_stamp_pattern, line):
+            check_next_line(line)
+        else:
+            try:
+                next_line = next(iter(proc.stdout.readline, b'')).decode('utf-8').rstrip()
+                outfile.write(next_line + "\n")
+                check_job_id(next_line,rule_name)
+            except StopIteration:
+                    print("No more lines to read from the output.")
+
+    def check_next_line(line):
+        global rule_name, job_number
+        try:
+            next_line = next(iter(proc.stdout.readline, b'')).decode('utf-8').rstrip()
+            outfile.write(next_line + "\n")
+            rule_name_match = re.search(rule_name_pattern, next_line)
+            finished_match = re.search(r'Finished job (\d+)\.', next_line)
+            if re.search(time_stamp_pattern, next_line):
+                check_next_line(next_line)
+            elif rule_name_match:
+                rule_name = rule_name_match.group(1)
+                check_job_id(next_line,rule_name)
+            elif finished_match:
+                finished_job_number = finished_match.group(1)
+                print(f"Finished job Number: {finished_job_number}")
+                finished_jobs[rule_name] = finished_job_number
+                check_next_line(next_line)
+            else:
+                check_next_line(line)
+        except StopIteration:
+            print("No more lines to read from the output.") 
+
+    def check_time_stamp(line):
+        global rule_name, job_number
+        # Check if line matches timestamp pattern
+        timestamp_match = re.search(time_stamp_pattern, line)
+        if timestamp_match:
+            # A new timestamp means a new job is starting or has finished
+            rule_name = None
+            job_number = None
+            outfile.write(line + "\n")
+            check_next_line(line)
+        else:
+            outfile.write(line + "\n")
+            check_next_line(line)
+
+    rule_name = None
+    job_number = None
+    with open(outfilelog, "w") as outfile:
+        for line in iter(proc.stdout.readline, b''):
+            line = line.decode('utf-8').rstrip()
+            try:
+                check_time_stamp(line)
+            except Exception as E:
+                glogger.prnt_fatel(f"Error in checking time stamp:\n{RED_}{E}{NC}")
+  
+
+
+
+
+

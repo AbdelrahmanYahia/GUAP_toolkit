@@ -3,8 +3,7 @@ import sys
 import argparse
 import subprocess
 from ..utils.globals import *
-from ..utils.parse_input import parse_input_args
-
+from ..utils.parse_input import parse_input_args, process_snakemake_standard_output
 
 def smk_cmd(all_args):
     smk_cmd = ""
