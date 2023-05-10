@@ -333,6 +333,7 @@ guap RNA --input dir \\
             else:
                 subprocess.run(f"{snakemake_cmd} -q -n --rulegraph | dot -Tpng > '{all_args['working_dir']}/{all_args['name']}.png'", shell=True)
                 process_snakemake_standard_output(snakemake_cmd, "output.log")
+                print(f"{PRP}{runtime.elapsed()}{NC}") 
         except Exception as E:
             glogger.prnt_fatel(f"Error in snakemake run:\n{RED_}{E}{NC}")
             print(f"{PRP}{runtime.elapsed()}{NC}") 

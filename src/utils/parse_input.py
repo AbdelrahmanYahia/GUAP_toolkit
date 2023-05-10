@@ -11,6 +11,8 @@ from collections import defaultdict
 # GUAP modules import
 from .globals import *
 import subprocess
+from tqdm import tqdm
+
 def check_extension(df): # takes pandas df and returns string
     # checks all files have same extension from pandas df, to use in generete sample table function
     uniques = df['ext'].unique()
@@ -275,6 +277,8 @@ def process_snakemake_standard_output(snakemake_cmd, outfilelog):
     time_stamp_pattern = r'\[\w{3} \w{3} \d{2} \d{2}:\d{2}:\d{2} \d{4}\]'
     rule_name_pattern = r'rule (\w+):$'
     jobid_pattern = r'    jobid: (\d+)'
+    done_status_pattern = r'(\d+) of (\d+) steps \((\d+)\%\) done'
+    total_pattern = r'total\s+(\d+)\s+\d+\s+\d+'
     running_jobs = {}
     finished_jobs = {}
     proc = subprocess.Popen(f"{snakemake_cmd} ", shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
@@ -282,7 +286,7 @@ def process_snakemake_standard_output(snakemake_cmd, outfilelog):
         job_id_match = re.search(jobid_pattern, line)
         if job_id_match:
             job_number = job_id_match.group(1)
-            print(f"Job {job_number} of rule {rule_name} is currently running.")
+            # print(f"Job {job_number} of rule {rule_name} is currently running.")
             running_jobs[job_number] = rule_name
             check_next_line(line)
         elif re.search(time_stamp_pattern, line):
@@ -302,6 +306,7 @@ def process_snakemake_standard_output(snakemake_cmd, outfilelog):
             outfile.write(next_line + "\n")
             rule_name_match = re.search(rule_name_pattern, next_line)
             finished_match = re.search(r'Finished job (\d+)\.', next_line)
+            finished_status_match = re.search(done_status_pattern, next_line)
             if re.search(time_stamp_pattern, next_line):
                 check_next_line(next_line)
             elif rule_name_match:
@@ -309,13 +314,20 @@ def process_snakemake_standard_output(snakemake_cmd, outfilelog):
                 check_job_id(next_line,rule_name)
             elif finished_match:
                 finished_job_number = finished_match.group(1)
-                print(f"Finished job Number: {finished_job_number}")
+                # print(f"Finished job Number: {finished_job_number}")
                 finished_jobs[rule_name] = finished_job_number
+                check_next_line(next_line)
+            elif finished_status_match:
+                current_finished_job = finished_status_match.group(1)
+                total_jobs = finished_status_match.group(2)
+                percentage = finished_status_match.group(3)
+                progress_bar.update((int(percentage)- progress_bar.n))
+                # print(f"Progress update: {finished_job_number}")
                 check_next_line(next_line)
             else:
                 check_next_line(line)
         except StopIteration:
-            print("No more lines to read from the output.") 
+            progress_bar.update((progress_bar.n)) 
 
     def check_time_stamp(line):
         global rule_name, job_number
@@ -334,12 +346,13 @@ def process_snakemake_standard_output(snakemake_cmd, outfilelog):
     rule_name = None
     job_number = None
     with open(outfilelog, "w") as outfile:
-        for line in iter(proc.stdout.readline, b''):
-            line = line.decode('utf-8').rstrip()
-            try:
-                check_time_stamp(line)
-            except Exception as E:
-                glogger.prnt_fatel(f"Error in checking time stamp:\n{RED_}{E}{NC}")
+        with tqdm(total=100,desc="Progress update") as progress_bar:
+            for line in iter(proc.stdout.readline, b''):
+                line = line.decode('utf-8').rstrip()
+                try:
+                    check_time_stamp(line)
+                except Exception as E:
+                    glogger.prnt_fatel(f"Error in checking time stamp:\n{RED_}{E}{NC}")
   
 
 
