@@ -77,6 +77,8 @@ if (opt$transcript){
   result <- merged_df %>%
     dplyr::select(tx_id, gene_name) %>%
     dplyr::right_join(df, by = c("tx_id" = "tx_id")) 
+  # Check for missing values in gene_name column and fill with gene_id if missing
+  result$Gene <- ifelse(is.na(result$gene_name), result$tx_id, result$gene_name) 
 }else{
   # Map annotation files to input counts data frame
   annot <- annotations %>%
@@ -91,23 +93,19 @@ if (opt$transcript){
   result <- annot %>%
     dplyr::select(gene_id, gene_name) %>%
     dplyr::right_join(df, by = c("gene_id" = "gene_id")) 
-  
+
+  # Check for missing values in gene_name column and fill with gene_id if missing
+  result$Gene <- ifelse(is.na(result$gene_name), result$gene_id, result$gene_name) 
 }
 
 
-# Check for missing values in gene_name column and fill with gene_id if missing
-result$Gene <- ifelse(is.na(result$gene_name), result$tx_id, result$gene_name) 
-
 # Aggregate results by gene, calculating the mean of other columns
 agg_results <- aggregate(result, list(result$Gene), FUN = mean) 
-
 # Set row names of aggregated results to Group.1 column
 rownames(agg_results) <- agg_results$Group.1 
-
 # Extract columns 5 to ncol(newdf)-1 from aggregated results and store in newdf
 newdf <- agg_results[5:ncol(agg_results)-1] 
 final_table <- as.data.frame(lapply(newdf, as.integer))
 rownames(final_table) <- rownames(newdf)
 colnames(final_table) <- colnames(newdf)
-
 write.table(final_table, paste0(opt$output), quote=FALSE, col.names=TRUE, sep="\t", row.names = TRUE)

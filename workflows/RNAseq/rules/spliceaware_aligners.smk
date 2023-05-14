@@ -88,9 +88,11 @@ rule merge_star_counts:
         in_dir = "star"
     output:
         temp("Counts/star_quant.temp")
+    log:
+        "logs/star/merging_counts.log"
     shell:
         f"""
-        Rscript {source_dir}/workflows/RNAseq/scripts/merge_counts.R -i {{params.in_dir}} -o {{output}} -s {{params.strand}}
+        Rscript {source_dir}/workflows/RNAseq/scripts/merge_counts.R -i {{params.in_dir}} -o {{output}} -s {{params.strand}} > {{log}} 2>&1
         """
 
 rule get_gene_symbol:
@@ -102,8 +104,9 @@ rule get_gene_symbol:
         org = "Homo sapeins"
     output:
         "Counts/star_quant.counts"
-        
+    log:
+        "logs/star/gene_to_symbl.log"
     shell:
         f"""
-        Rscript {source_dir}/workflows/RNAseq/scripts/geneIDtoSymbol.R -i {{input}} -o {{output}} 
+        Rscript {source_dir}/workflows/RNAseq/scripts/geneIDtoSymbol.R -i {{input}} -o {{output}} > {{log}} 2>&1
         """

@@ -279,15 +279,21 @@ def process_snakemake_standard_output(snakemake_cmd, outfilelog):
     jobid_pattern = r'    jobid: (\d+)'
     done_status_pattern = r'(\d+) of (\d+) steps \((\d+)\%\) done'
     total_pattern = r'total\s+(\d+)\s+\d+\s+\d+'
+    error_pattern = r'.*one of the commands exited with non-zero exit code.*'
+    rule_error_pattern = r"Error in rule (\w+):$"
+    exiting_message = r"Exiting because a job execution failed. Look above for error message"
+    no_more_jobs = r"Nothing to be done (all requested files are present and up to date)."
     running_jobs = {}
     finished_jobs = {}
+    failed_jobs = {}
     proc = subprocess.Popen(f"{snakemake_cmd} ", shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
     def check_job_id(line, rule_name):
         job_id_match = re.search(jobid_pattern, line)
         if job_id_match:
             job_number = job_id_match.group(1)
-            # print(f"Job {job_number} of rule {rule_name} is currently running.")
+            job_number = int(job_number)
             running_jobs[job_number] = rule_name
+            progress_bar.set_description(f"Performing Job {job_number}")
             check_next_line(line)
         elif re.search(time_stamp_pattern, line):
             check_next_line(line)
@@ -297,16 +303,21 @@ def process_snakemake_standard_output(snakemake_cmd, outfilelog):
                 outfile.write(next_line + "\n")
                 check_job_id(next_line,rule_name)
             except StopIteration:
-                    print("No more lines to read from the output.")
+                    progress_bar.close()
 
     def check_next_line(line):
         global rule_name, job_number
         try:
             next_line = next(iter(proc.stdout.readline, b'')).decode('utf-8').rstrip()
             outfile.write(next_line + "\n")
+
             rule_name_match = re.search(rule_name_pattern, next_line)
             finished_match = re.search(r'Finished job (\d+)\.', next_line)
             finished_status_match = re.search(done_status_pattern, next_line)
+            rule_error_pattern_match = re.search(rule_error_pattern,next_line)
+            exiting_message_match = re.search(exiting_message,next_line)
+            nothing_match = re.search(no_more_jobs,next_line)
+
             if re.search(time_stamp_pattern, next_line):
                 check_next_line(next_line)
             elif rule_name_match:
@@ -314,20 +325,61 @@ def process_snakemake_standard_output(snakemake_cmd, outfilelog):
                 check_job_id(next_line,rule_name)
             elif finished_match:
                 finished_job_number = finished_match.group(1)
-                # print(f"Finished job Number: {finished_job_number}")
                 finished_jobs[rule_name] = finished_job_number
+                check_next_line(next_line)
+            elif rule_error_pattern_match:
+                print("rule error\n\n\n\ntest")
+                current_rule_error = rule_error_pattern_match.group(1)
+                try:
+                    following_line = next(iter(proc.stdout.readline, b'')).decode('utf-8').rstrip()
+                    outfile.write(following_line + "\n")
+                    job_id_match = re.search(jobid_pattern, following_line)
+                    if job_id_match:
+                        failed_jobs[job_number] = current_rule_error
+                        tqdm.write(f"{YEL}job {job_number}, of Rule ({current_rule_error}) had and {RED}Error{NC}")
+                        check_next_line(following_line)
+                    else:
+                        progress_bar.close()
+                        glogger.prnt_fatel(f"Something seems to be wrong!\nCheck log for errors as I found an error in rule: {current_rule_error}")
+                except StopIteration:
+                    progress_bar.close()
+                    glogger.prnt_fatel(f"{RED_}Something went wrong!{NC}")
                 check_next_line(next_line)
             elif finished_status_match:
                 current_finished_job = finished_status_match.group(1)
                 total_jobs = finished_status_match.group(2)
                 percentage = finished_status_match.group(3)
-                progress_bar.update((int(percentage)- progress_bar.n))
+                percentage = int(percentage)
+                if percentage == 100:
+                    progress_bar.set_description(f"{GRE}All process finished :D {NC}")
+                    progress_bar.update((int(percentage)- progress_bar.n))
+                else:
+                    progress_bar.update((int(percentage)- progress_bar.n))
                 # print(f"Progress update: {finished_job_number}")
                 check_next_line(next_line)
+            elif exiting_message_match:
+                tqdm.write(f"{YEL}An error occurred. Stopping progress bar and exiting.{NC}")
+                try:
+                    following_line = next(iter(proc.stdout.readline, b'')).decode('utf-8').rstrip()
+                    outfile.write(following_line + "\n")
+                    last_line = re.search(r'^Complete log:.*', following_line)
+                    if last_line:
+                        progress_bar.close()
+                        glogger.prnt_fatel("A job or more has Failed, check log file")
+                    else:
+                        progress_bar.close()
+                        glogger.prnt_fatel(f"Something seems to be wrong!\nCheck log for errors as I found an error in rule: {current_rule_error}")
+                except StopIteration:
+                    progress_bar.close()
+                    glogger.prnt_fatel(f"{RED_}Something went wrong!{NC}")
+            elif nothing_match:
+                tqdm.write(f"{GRE}Nothing to be done (all requested files are present and up to date){NC}")
+                progress_bar.close()
+
             else:
                 check_next_line(line)
         except StopIteration:
-            progress_bar.update((progress_bar.n)) 
+            progress_bar.close()
 
     def check_time_stamp(line):
         global rule_name, job_number
@@ -346,7 +398,7 @@ def process_snakemake_standard_output(snakemake_cmd, outfilelog):
     rule_name = None
     job_number = None
     with open(outfilelog, "w") as outfile:
-        with tqdm(total=100,desc="Progress update") as progress_bar:
+        with tqdm(total=100,desc="Workflow running:", leave=True, bar_format="{l_bar}{bar}| [ Elapsed: {elapsed} ]") as progress_bar:
             for line in iter(proc.stdout.readline, b''):
                 line = line.decode('utf-8').rstrip()
                 try:
@@ -354,8 +406,4 @@ def process_snakemake_standard_output(snakemake_cmd, outfilelog):
                 except Exception as E:
                     glogger.prnt_fatel(f"Error in checking time stamp:\n{RED_}{E}{NC}")
   
-
-
-
-
 
