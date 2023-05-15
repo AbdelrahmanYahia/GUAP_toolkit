@@ -81,13 +81,16 @@ def recogize_pattern(file_name): # takes string of fastq file name and returns d
         file_name, sample_name, sample_id, sample_number, read_num, lane, tail, ext = matched.groups()[0], matched.groups()[1], matched.groups()[2], matched.groups()[3], matched.groups()[5], matched.groups()[4], matched.groups()[6], matched.groups()[7]
 
     elif matched_pattern == "SRR":
-        file_name, sample_name, sample_id, read_num, lane, tail, ext = matched.groups()[0], matched.groups()[1], matched.groups()[3], matched.groups()[5], "", "", matched.groups()[6]
+        glogger.prnt_fatel(f"{RED}{matched_pattern}{NC} is currntly not supported sample naming pattern\nonly {GRE}'Illumina'{NC} naming pattern is supported at the moment")
+        file_name, sample_name, sample_id, sample_number, read_num, lane, tail, ext = matched.groups()[0], matched.groups()[1], matched.groups()[3], "", matched.groups()[5], "", "", matched.groups()[6]
 
     elif matched_pattern == "general":
-        file_name, sample_name, sample_id, read_num, lane, tail, ext = matched.groups()[0], matched.groups()[1], matched.groups()[1], matched.groups()[4], "", "", matched.groups()[5]
+        glogger.prnt_fatel(f"{RED}{matched_pattern}{NC} is currntly not supported sample naming pattern\nonly {GRE}'Illumina'{NC} naming pattern is supported at the moment")
+        file_name, sample_name, sample_id, sample_number, read_num, lane, tail, ext = matched.groups()[0], matched.groups()[1], matched.groups()[1], "", matched.groups()[4], "", "", matched.groups()[5]
 
     else:
-        file_name = sample_name = sample_id = read_num = lane = tail = ext = None
+        glogger.prnt_fatel(f"{RED}Your Samples Pattern is an unfamiler pattern.{NC}\nPlease contact my Developpers and they will look into it :D")
+        file_name = sample_name = sample_id = sample_number = read_num = lane = tail = ext = None
 
     # Returns a dictionary of sample information
     return {

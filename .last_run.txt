@@ -1,1 +1,1 @@
-RNA -i ./data/samples -o ./test1 --metadata ./clinical.tsv --aligner star --quantifier featurecounts --reference-index ./data/refs/index/STAR/ --gtf-file ./data/refs/fa/chr22_with_ERCC92.gtf --sample-name sample --control-name control --sample-zeros 2 --control-zeros 2 -n test1 --overwrite --skip-QC
+WES -i data/samples/WES -o WES_GUAP_test/test1 --aligner bwa --variant-caller GATK --bed-file ./data/refs/Genome_beds/exon_coding_seq.bed.gz --reference-fasta ./data/refs/fa/chr19.fa.gz --reference-index ./data/refs/indexes/bwa/chr19/chr19_bwa_index --trimmomatic --overwrite

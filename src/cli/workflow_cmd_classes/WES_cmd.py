@@ -4,6 +4,9 @@ class WES(WorkflowCli):
     name = 'WES'
     help = '''guap WES -i/--input dir'''
     usage = f"""{YEL}Basic Run Usage example:{NC}
+    guap WES -i indir -o outdir --bed-file file \
+            --aligner bwa --reference-fasta fasta.fasta \
+            --reference-index indexpath 
         """
 
     def add_arguments(self, parser):
@@ -153,7 +156,7 @@ class WES(WorkflowCli):
             help="path to reference index"
         )
 
-        variant_caller_conf = parser.add_argument_group(f'{BLU}Aligner configuration{NC}')
+        variant_caller_conf = parser.add_argument_group(f'{BLU}Variant caller configuration{NC}')
 
         variant_caller_conf.add_argument(
                 '--variant-caller', 
@@ -185,8 +188,6 @@ class WES(WorkflowCli):
             default= 4,
             metavar = "N",
         )
-
-
 
         # Snakemake Options
         snakemake_options = parser.add_argument_group(f'{CYN}Snakemake Options{NC}')
@@ -227,9 +228,9 @@ class WES(WorkflowCli):
 
         other_conf.add_argument(
             '-n',"--name", 
-            default=f"RNA_run[{os.environ['start_time']}]", 
+            default=f"guap_run[{os.environ['start_time']}]", 
             metavar = 'str',
-            help=f"Name of files [ default = RNA_run[date time] ]"
+            help=f"Name of files [ default = guap_run[date time] ]"
         )
 
         other_conf.add_argument(
@@ -253,28 +254,4 @@ class WES(WorkflowCli):
 
 
     def run(self, args):
-        if args.print_last_run:
-            with open(f"{GUAP_DIR}/.last_run.txt", 'r') as last_run:
-                lines = last_run.readlines()
-            last_command = lines[0]
-            print(f"python3 {GUAP_DIR}guap.py {last_command}")
-            exit()
-        all_args = parse_input_args(args)
-        snakemake_cmd = smk_cmd(all_args)
-        try:
-            if all_args['export_dag'] is True and all_args['dry_run'] != True:
-                if all_args['continue']:
-                    subprocess.run(f"snakemake --snakefile '{GUAP_DIR}/workflows/RNAseq/Snakefile' --configfile '{all_args['working_dir']}/config.yaml' -j {all_args['threads']} {all_args['smk_extra_args']}", shell=True)
-                else:
-                    subprocess.run(snakemake_cmd, shell=True)
-                    subprocess.run(f"snakemake --snakefile '{GUAP_DIR}/workflows/RNAseq/Snakefile' --configfile '{all_args['working_dir']}/config.yaml' -j {all_args['threads']} {all_args['smk_extra_args']}", shell=True)
-
-                print(f"{PRP}{runtime.elapsed()}{NC}")
-            else:
-                subprocess.run(f"{snakemake_cmd} -q -n --rulegraph | dot -Tpng > '{all_args['working_dir']}/{all_args['name']}.png'", shell=True)
-                subprocess.run(snakemake_cmd, shell=True)
-                print(f"{PRP}{runtime.elapsed()}{NC}")
-        except:
-            glogger.prnt_fatel("Error in snakemake dry run")
-            print(f"{PRP}{runtime.elapsed()}{NC}") 
-
+            super().run(args, "WES")

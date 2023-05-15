@@ -313,28 +313,4 @@ guap RNA --input dir \\
 
 
     def run(self, args):
-        if args.print_last_run:
-            with open(f"{GUAP_DIR}/.last_run.txt", 'r') as last_run:
-                lines = last_run.readlines()
-            last_command = lines[0]
-            print(f"python3 {GUAP_DIR}guap.py {last_command}")
-            exit()
-        all_args = parse_input_args(args)
-        snakemake_cmd = smk_cmd(all_args)
-        try:
-            if all_args['export_dag'] is True and all_args['dry_run'] != True:
-                if all_args['continue']:
-                    subprocess.run(f"snakemake --snakefile '{GUAP_DIR}/workflows/RNAseq/Snakefile' --configfile '{all_args['working_dir']}/config.yaml' -j {all_args['threads']} --progress {all_args['smk_extra_args']}", shell=True)
-                else:
-                    subprocess.run(snakemake_cmd, shell=True)
-                    subprocess.run(f"snakemake --snakefile '{GUAP_DIR}/workflows/RNAseq/Snakefile' --configfile '{all_args['working_dir']}/config.yaml' -j {all_args['threads']} --progress {all_args['smk_extra_args']}", shell=True)
-
-                print(f"{PRP}{runtime.elapsed()}{NC}")
-            else:
-                subprocess.run(f"{snakemake_cmd} -q -n --rulegraph | dot -Tpng > '{all_args['working_dir']}/{all_args['name']}.png'", shell=True)
-                process_snakemake_standard_output(snakemake_cmd, "output.log")
-                print(f"{PRP}{runtime.elapsed()}{NC}") 
-        except Exception as E:
-            glogger.prnt_fatel(f"Error in snakemake run:\n{RED_}{E}{NC}")
-            print(f"{PRP}{runtime.elapsed()}{NC}") 
-
+            super().run(args, "RNAseq")

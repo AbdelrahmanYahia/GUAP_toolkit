@@ -28,5 +28,6 @@ if __name__ == '__main__':
 |                                                 |
 |       {GRE}GUAP toolkit for Genomics analysis{NC}        |
 | ________________________________________________|
+
     """)
     cli = cli.Cli()
