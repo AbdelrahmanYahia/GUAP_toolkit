@@ -105,6 +105,91 @@ def recogize_pattern(file_name): # takes string of fastq file name and returns d
         "matched_pattern": ptrn_name
     }
 
+def qiime_table_checker(df):
+    if ("sample-id" or "id" or "sampleid" or "sample id") in df.columns:
+        if "#q2:types" in (df.iloc[:1]).values.tolist()[0]:
+            return True
+        else:
+            return False
+    else:
+        return False
+
+def check_metadata(args):
+    # samples dataframe and output path declaration 
+    samples = parse_samples(os.path.abspath(args.input))
+    samples_IDs = list(samples.iloc[:, 2])
+    outpath = os.path.abspath(args.output)
+
+    # check metadata file 
+    if args.metadata is None or args.create_metadata_table:
+        if args.create_metadata_table:
+            pass
+        else:
+            # prompt the user to create metadata file 
+            create_meta = input(f"{RED}No metadata file supplied,{NC} do I create an empty one with sample IDs? (y/n) ")
+            if create_meta == ( 'y' or 'Y'):
+                pass
+            else:
+                # exiting 
+                glogger.prnt_fatel("No metadata supplied or created!")
+        # creating metadata file 
+        glogger.prnt_warning(f"{YEL}I will create one at '{args.output}', \nplease re-run the analysis with \n-m {args.output}/sample-metada.tsv after modifing the file (check https://docs.qiime2.org/2021.11/tutorials/metadata/)\033[;39;m")
+        # creating empty data frame to store metadata info
+        header = pd.DataFrame({"1": ["#q2:types", "categorical"]}).T
+        header.columns = ["sample-id", "condition"]
+
+        new_samples = {}
+        c = 2
+        # get sample ids
+        for sample in samples_IDs:
+            new_samples[c] = [sample["Sample ID"], "BLANK"]
+            c += 1
+        # store sample IDs and BLANK at new df, and export
+        samples_df = pd.DataFrame(new_samples).T
+        samples_df.columns = ["sample-id", "condition"]
+        samples_df = samples_df.sort_values(["sample-id"])
+        metadata_file = pd.concat([header, samples_df])
+        metadata_file.to_csv(outpath+"/"+"sample-metadata.tsv",sep='\t',index=False) 
+        args.metadata = f"{outpath}/sample-metadata.tsv"
+        glogger.prnt_fatel(f"{GRE}Metadata empty file created, {RED}Exiting...{NC}")
+
+    else:
+        if not os.path.isfile(args.metadata):
+            glogger.prnt_fatel(f"{RED}{args.metadata} Doesn't exist!{NC}")
+        else:
+            # checking metadata file extension 
+            metadataname, metadataextension = os.path.splitext(args.metadata)
+            if metadataextension == (".tsv"):
+                the_file = pd.read_csv(args.metadata,sep="\t")
+            elif metadataextension == (".csv"):
+                the_file = pd.read_csv(args.metadata,sep="\t")
+            else:
+                glogger.prnt_fatel(f"{RED}{args.metadata} Have strange extension (use: tsv or csv){NC}")
+
+            rest_of_cols = the_file.columns[1:]
+            # checks all samples are present in the file with proper names
+            if False in samples['sample_id'].isin(the_file.T.iloc[0]).tolist():
+                glogger.prnt_fatel(f"{RED} Please check {args.metadata} sample IDs!\n{YEL}Note: {NC}You can re-run your code WITHOUT suppling a metadata file and \nGUAP will ask to create an empty one for you with the samples IDs.")
+     
+            else:
+                # check qiime2 format and modifing if not
+                if qiime_table_checker(the_file):
+                    if metadataextension == (".csv"):
+                        the_file.to_csv(outpath+"/"+"sample-metadata.tsv",sep='\t',index=False) 
+                        args.metadata = "{outpath}/sample-metadata.tsv"
+                else:
+                    print(f"{RED}Note:{NC}Modifing sample metadata file to be compatible with QIIME2")
+                    columns_names = rest_of_cols.to_list()
+                    columns_names.insert(0, 'sample-id')
+                    columns_names
+                    t = f'{(len(columns_names) -1 )* "categorical,"}'.split(",")[:-1]
+                    t.insert(0, "#q2:types")
+                    header_N = pd.DataFrame({1: t}).T
+                    header_N.columns = columns_names
+                    the_file.columns = columns_names
+                    last_file = pd.concat([header_N, the_file])
+                    last_file.to_csv(outpath+"/"+"sample-metadata.tsv",sep='\t',index=False) 
+                    args.metadata = f"{outpath}/sample-metadata.tsv"
 
 def parse_samples(inpath): # takes path return contains fastq files, returns df contains sample information
     ## takes input path
@@ -283,7 +368,7 @@ def process_snakemake_standard_output(snakemake_cmd, outfilelog):
     done_status_pattern = r'(\d+) of (\d+) steps \((\d+)\%\) done'
     total_pattern = r'total\s+(\d+)\s+\d+\s+\d+'
     error_pattern = r'.*one of the commands exited with non-zero exit code.*'
-    rule_error_pattern = r"Error in rule (\w+):$"
+    rule_error_pattern = r"Error in rule .*"
     exiting_message = r"Exiting because a job execution failed. Look above for error message"
     no_more_jobs = r"Nothing to be done (all requested files are present and up to date)."
     running_jobs = {}
@@ -296,7 +381,7 @@ def process_snakemake_standard_output(snakemake_cmd, outfilelog):
             job_number = job_id_match.group(1)
             job_number = int(job_number)
             running_jobs[job_number] = rule_name
-            progress_bar.set_description(f"Performing Job {job_number}")
+            progress_bar.set_description(f"Performing {rule_name} job no. {job_number}")
             check_next_line(line)
         elif re.search(time_stamp_pattern, line):
             check_next_line(line)
@@ -317,7 +402,7 @@ def process_snakemake_standard_output(snakemake_cmd, outfilelog):
             rule_name_match = re.search(rule_name_pattern, next_line)
             finished_match = re.search(r'Finished job (\d+)\.', next_line)
             finished_status_match = re.search(done_status_pattern, next_line)
-            rule_error_pattern_match = re.search(rule_error_pattern,next_line)
+            rule_error_pattern_match = re.search(rule_error_pattern, next_line)
             exiting_message_match = re.search(exiting_message,next_line)
             nothing_match = re.search(no_more_jobs,next_line)
 
@@ -331,7 +416,7 @@ def process_snakemake_standard_output(snakemake_cmd, outfilelog):
                 finished_jobs[rule_name] = finished_job_number
                 check_next_line(next_line)
             elif rule_error_pattern_match:
-                print("rule error\n\n\n\ntest")
+                glogger.prnt_fatel(f"Error in {rule_error_pattern_match.group(1)}")
                 current_rule_error = rule_error_pattern_match.group(1)
                 try:
                     following_line = next(iter(proc.stdout.readline, b'')).decode('utf-8').rstrip()

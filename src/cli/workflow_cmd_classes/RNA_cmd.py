@@ -313,4 +313,4 @@ guap RNA --input dir \\
 
 
     def run(self, args):
-            super().run(args, "RNAseq")
+        super().run(args, "RNAseq")

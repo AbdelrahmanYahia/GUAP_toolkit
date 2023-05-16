@@ -1,5 +1,5 @@
 from ..workflows import *
-
+from utils.parse_input import check_metadata
 class rRNA(WorkflowCli):
     name = '16s'
     help = '''rRNA 16s analysis workflow'''
@@ -63,13 +63,27 @@ class rRNA(WorkflowCli):
         downstream_conf.add_argument('--export-figs-only', action='store_true', help="export phyloseq figures (alpha, beta and bar plots)")
 
 
-        # performance
-        snakemake_options = parser.add_argument_group(f'{CYN}snakemake{NC}')
-        snakemake_options.add_argument('--bash', dest='snakemake', action='store_false', help="Use bash scripts instead of snakemake")
-        snakemake_options.add_argument('--snakemake', dest='snakemake', action='store_true', help="Use snakemake workflow (ability to contiue) [default]")
-        snakemake_options.add_argument('--snakemake-dry-run', action='store_true', help="performs snakemake dry run")
-        snakemake_options.add_argument('--snakemake-dag', action='store_true', help="performs snakemake dry run and exports DAG")
+        # Snakemake Options
+        snakemake_options = parser.add_argument_group(f'{CYN}Snakemake Options{NC}')
 
+        snakemake_options.add_argument(
+            '--dry-run', 
+            action='store_true', 
+            help="performs snakemake dry run"
+        )
+
+        snakemake_options.add_argument(
+            '--export-dag', 
+            action='store_true', 
+            help="performs snakemake dry run and exports DAG"
+        )
+
+        snakemake_options.add_argument(
+            "--smk-extra-args", 
+            metavar="='-args'",
+            help="A string value of extra args for snakemake(must be used with = with no spaces (--smk-extra-args='-arg1 -arg2'))",
+            default="", type=str
+        )
 
         # other options
         other_conf = parser.add_argument_group(f'{CYN}Other{NC}')
@@ -78,55 +92,32 @@ class rRNA(WorkflowCli):
         other_conf.add_argument('--version', action='version', help="Print version number")
         other_conf.add_argument('--verbose', action='store_true', help="verbose")
         other_conf.add_argument('--quit', dest='verbose', action='store_false', help="print many output")
+        other_conf.add_argument(
+            '--print-last-run', 
+            action='store_true', 
+            help="Prints last run on screen"
+        )
 
-        parser.set_defaults(snakemake=True)
-        parser.set_defaults(trimmomatic=True)
-        parser.set_defaults(verbose=False)
-
-    def run(self, args):
-        print(vars(args))
-
-
-class WES(WorkflowCli):
-    name = 'WES'
-    help = '''guap WES -i/--input dir'''
-    usage = ""
-
-    def add_arguments(self, parser):
-        # basic inputs
-        parser.add_argument('-i', '--input', help= "Input directory path", metavar='path', type=os.path.abspath)  
-        parser.add_argument('-o', '--output', help= "Output directory path", metavar='path', type=os.path.abspath)
-        # performance
-        parser.add_argument('-t', '--threads', help= "Number of total no. of threads", type=int)
-        parser.add_argument('--threads-index', help= "Number of threads to use during indexing ref", type=int )
-        parser.add_argument('--threads-align', help= "Number of threads to use per sample aliging", type=int, default = 4)
-        parser.add_argument('--threads-calling', help= "Number of threads to use per sample variant caller", type=int, default = 4)
-        # main process
-        parser.add_argument('--aligner', help = "Choose aligner", choices=["bwa", "bowtie2"], type=str, default='bwa')
-        parser.add_argument('--variant-caller', help = "Choose variant caller", choices=["GATK", "mpileup", "lofreq"], type=str, default='GATK')
-        parser.add_argument('--bed-file', help='bed file path', metavar='path', type=os.path.abspath)
-        parser.add_argument('--reference-fasta',metavar='path', type=os.path.abspath, help="path to reference fasta file")
-        parser.add_argument('--reference-index',metavar='path', type=os.path.abspath, help="path to reference index")
-        parser.add_argument('--known-variants',metavar='path', type=os.path.abspath, help="path to reference fasta file")
-        # QC
-        parser.add_argument('--skip-QC', action='store_true', help="Skip QC step")
-        parser.add_argument('--index-reference', action='store_true', help="index reference")
-        # snakemake options
-        parser.add_argument('--snakemake-dry-run', action='store_true', help="performs snakemake dry run")
-        parser.add_argument('--snakemake-dag', action='store_true', help="performs snakemake dry run and exports DAG")
-        parser.add_argument('--snakemake', dest='snakemake', action='store_true', help="Use snakemake workflow (ability to contiue) [default]")
-        parser.add_argument('--bash', dest='snakemake', action='store_false', help="Use bash scripts instead of snakemake")
-        # other utils
-        parser.add_argument('--continue', action='store_true', help="continue analysis when re-run")
-        parser.add_argument('--overwrite', action='store_true', help="overwrite output dir if exsits")
-        parser.add_argument('--verbose', action='store_true', help="verbose")
-        parser.add_argument('--quit', dest='verbose', action='store_false', help="print many output")
-
-        # defaults
-        parser.set_defaults(verbose=False)
-        parser.set_defaults(snakemake=True)
-
+        other_conf.set_defaults(verbose=False)
 
     def run(self, args):
-        print(vars(args))
+        # check if no classifier is selected 
+        if args.train is False and args.classifier is None:
+            glogger.prnt_fatel(f"{RED}--classifier is required when --train is not set.{NC}")
 
+        # check if proper classifier is selected with the analysis
+        if args.deblur is True and args.choose_classifier == "dada":
+            glogger.prnt_fatel(f"{RED}--choose-classifier dada is not currently supported with deblur.{NC}")
+        
+        # 
+        if args.use_QIIME2 is True and args.choose_classifier == "dada":
+            glogger.prnt_fatel(f"{RED}--choose-classifier dada is not currently supported with QIIME2 DADA2.{NC}")
+
+
+        # check if classifier exsits 
+        if not os.path.isfile(args.classifier):
+            glogger.prnt_fatel(f"{RED}{args.classifier} Doesn't exsit!{NC}")
+            
+
+        check_metadata(args)
+        super().run(args, "16srRNA")
