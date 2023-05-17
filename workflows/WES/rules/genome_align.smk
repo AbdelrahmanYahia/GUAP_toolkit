@@ -11,7 +11,8 @@ rule bwa_align:
         index = ref_bwa,
         fa = ref_fasta
 
-    log: "logs/{sample}_bwa.log"
+    log: 
+        bwa = "logs/{sample}_bwa.log",
 
     benchmark: "benchamrks/{sample}_bwa.txt"
 
@@ -25,7 +26,7 @@ rule bwa_align:
         RGID=$(head -n1 $R1 | sed 's/:/_/g' | cut -d "_" -f1,2,3,4)
         PU=$RGID.$LB 
         bwa mem -t {threads} -M \
-            -R "@RG\\tID:$RGID\\tSM:$SM\\tPL:$PL\\tLB:$LB\\tPU:$PU" {params.index} {input.R1} {input.R2} > {output} 2> {log}
+            -R "@RG\\tID:$RGID\\tSM:$SM\\tPL:$PL\\tLB:$LB\\tPU:$PU" {params.index} {input.R1} {input.R2} > {output} 2> {log.bwa}
         """
 
 rule convert_sam:

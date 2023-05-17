@@ -487,7 +487,7 @@ def process_snakemake_standard_output(snakemake_cmd, outfilelog):
     rule_name = None
     job_number = None
     with open(outfilelog, "w") as outfile:
-        with tqdm(total=100,desc="Workflow running:", leave=True, bar_format="{l_bar}{bar}| [ Elapsed: {elapsed} ]") as progress_bar:
+        with tqdm(total=100,desc="Workflow running", leave=True, bar_format="{l_bar}{bar}| [ Elapsed: {elapsed} ]") as progress_bar:
             for line in iter(proc.stdout.readline, b''):
                 line = line.decode('utf-8').rstrip()
                 try:

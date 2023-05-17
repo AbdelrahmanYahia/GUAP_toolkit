@@ -17,7 +17,6 @@ bamfilename = ""
 common_rules = config["common_rules"]
 include: f'{common_rules}/common.smk'
 
-
 def get_final_output(wildcards):
     final_input = []
     if config['skip_QC'] is False:
@@ -34,8 +33,16 @@ def get_final_output(wildcards):
                 R = [1, 2],
                 sample = samples
             ))
-    final_input.extend(expand("{sample}_{aligner}.stats", sample = samples, aligner = aligners))
-    final_input.extend(expand("{variant_caller}/{sample}_{aligner}_picard.vcf", sample = samples, variant_caller = variant_callers,aligner = aligners)) 
+    final_input.extend(expand(
+        "{sample}_{aligner}.stats",
+         sample = samples, 
+         aligner = aligners))
+
+    final_input.extend(expand(
+        "{variant_caller}/{sample}_{aligner}_picard.vcf", 
+        sample = samples, 
+        variant_caller = variant_callers,
+        aligner = aligners)) 
 
     if variant_callers == "GATK":
         final_input.extend(expand("GATK/{sample}_{aligner}_picard.pdf", sample = samples, aligner = aligners))

@@ -3,15 +3,15 @@ rule sort_bam:
         "{aligner}/{sample}.bam"
 
     output:
-        out = "{aligner}/{sample}_sorted.bam"
+        "{aligner}/{sample}.sorted.bam"
 
     shell:
-        "samtools sort {input} -o {output.out}"
+        "samtools sort {input} -o {output}"
 
 
 rule mrk_duplicates_picard:
     input:
-        "{aligner}/{sample}_sorted.bam"
+        "{aligner}/{sample}.sorted.bam"
 
     output:
         bam = "{aligner}/{sample}_picard.dedub.bam",
@@ -26,7 +26,6 @@ rule mrk_duplicates_picard:
             -O {output.bam} \
             -M {output.matrix} > {log}
         """
-
 
 
 rule bqsr_dedub_report:

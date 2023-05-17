@@ -5,7 +5,7 @@ include: f'{common_rules}/trimmomatic.smk'
 
 rule QC_alignment:
     input:
-        "{aligner}/{sample}_sorted.bam"
+        "{aligner}/{sample}.sorted.bam"
 
     output:
         cov = "{sample}_{aligner}.cov",
