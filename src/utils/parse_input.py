@@ -402,27 +402,19 @@ def process_snakemake_standard_output(snakemake_cmd, outfilelog):
             rule_name_match = re.search(rule_name_pattern, next_line)
             finished_match = re.search(r'Finished job (\d+)\.', next_line)
             finished_status_match = re.search(done_status_pattern, next_line)
-            rule_error_pattern_match = re.search(rule_error_pattern, next_line)
             exiting_message_match = re.search(exiting_message,next_line)
             nothing_match = re.search(no_more_jobs,next_line)
-
-            if re.search(time_stamp_pattern, next_line):
-                check_next_line(next_line)
-            elif rule_name_match:
-                rule_name = rule_name_match.group(1)
-                check_job_id(next_line,rule_name)
-            elif finished_match:
-                finished_job_number = finished_match.group(1)
-                finished_jobs[rule_name] = finished_job_number
-                check_next_line(next_line)
-            elif rule_error_pattern_match:
-                glogger.prnt_fatel(f"Error in {rule_error_pattern_match.group(1)}")
+            rule_error_pattern_match = re.search(r"Error in rule (\w+).*", next_line)
+            if rule_error_pattern_match:
+                # glogger.prnt_fatel(f"Error in {rule_error_pattern_match.group(1)}")
                 current_rule_error = rule_error_pattern_match.group(1)
                 try:
                     following_line = next(iter(proc.stdout.readline, b'')).decode('utf-8').rstrip()
                     outfile.write(following_line + "\n")
                     job_id_match = re.search(jobid_pattern, following_line)
                     if job_id_match:
+                        job_number = job_id_match.group(1)
+                        job_number = int(job_number)
                         failed_jobs[job_number] = current_rule_error
                         tqdm.write(f"{YEL}job {job_number}, of Rule ({current_rule_error}) had and {RED}Error{NC}")
                         check_next_line(following_line)
@@ -432,6 +424,15 @@ def process_snakemake_standard_output(snakemake_cmd, outfilelog):
                 except StopIteration:
                     progress_bar.close()
                     glogger.prnt_fatel(f"{RED_}Something went wrong!{NC}")
+            # print(next_line)
+            if re.search(time_stamp_pattern, next_line):
+                check_next_line(next_line)
+            elif rule_name_match:
+                rule_name = rule_name_match.group(1)
+                check_job_id(next_line,rule_name)
+            elif finished_match:
+                finished_job_number = finished_match.group(1)
+                finished_jobs[rule_name] = finished_job_number
                 check_next_line(next_line)
             elif finished_status_match:
                 current_finished_job = finished_status_match.group(1)
@@ -453,7 +454,7 @@ def process_snakemake_standard_output(snakemake_cmd, outfilelog):
                     last_line = re.search(r'^Complete log:.*', following_line)
                     if last_line:
                         progress_bar.close()
-                        glogger.prnt_fatel("A job or more has Failed, check log file")
+                        glogger.prnt_fatel(f"A job or more has Failed, check log file\nFailed jobs:\n{failed_jobs}")
                     else:
                         progress_bar.close()
                         glogger.prnt_fatel(f"Something seems to be wrong!\nCheck log for errors as I found an error in rule: {current_rule_error}")
