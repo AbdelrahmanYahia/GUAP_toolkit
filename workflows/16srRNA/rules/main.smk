@@ -14,6 +14,10 @@ USE_THREADS_QIIME = ALL_THREADS
 USE_MEM = int((MEM/2)*1000)
 GUAP_FOLDER = config["GUAP_DIR"]
 
+common_rules = config["common_rules"]
+include: f'{common_rules}/common.smk'
+
+
 if ALL_THREADS <= 4:
     USE_THREADS = 1
 else:
@@ -104,7 +108,7 @@ def get_analysis_input():
         return("multiqc/multiqc_report.html")
     
     elif config["skip_QC"] :
-        return(expand(f"reads/{{sample}}_R{{R}}{EXTT}",sample=SAMPLES_IDs, R=[1,2]))
+        return(unpack(get_raw_fasta))
     
     else:
         return("multiqc/multiqc_report.html")
@@ -136,5 +140,5 @@ include: "handling.smk"
 include: "classify.smk"
 include: "downstream_R.smk"
 include: "import_fx.smk"
-include: GUAP_FOLDER+"/workflows/common/snakemake/QC.smk"
+include: GUAP_FOLDER+"/workflows/common/rules/test/QC.smk"
 

@@ -1,5 +1,5 @@
 from ..workflows import *
-from utils.parse_input import check_metadata
+from ...utils.parse_input import check_metadata
 class rRNA(WorkflowCli):
     name = '16s'
     help = '''rRNA 16s analysis workflow'''

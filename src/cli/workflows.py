@@ -51,14 +51,14 @@ class WorkflowCli:
             print(f"guap {last_command}")
             exit()
         all_args = parse_input_args(args)
-        snakemake_cmd = smk_cmd(all_args, "WES")
+        snakemake_cmd = smk_cmd(all_args, f"{workflow}")
         try:
             if all_args['export_dag'] is True and all_args['dry_run'] != True:
                 if all_args['continue']:
-                    subprocess.run(f"snakemake --snakefile '{GUAP_DIR}/workflows/WES/Snakefile' --configfile '{all_args['working_dir']}/config.yaml' -j {all_args['threads']} --progress {all_args['smk_extra_args']}", shell=True)
+                    subprocess.run(f"snakemake --snakefile '{GUAP_DIR}/workflows/{workflow}/Snakefile' --configfile '{all_args['working_dir']}/config.yaml' -j {all_args['threads']} --progress {all_args['smk_extra_args']}", shell=True)
                 else:
                     subprocess.run(snakemake_cmd, shell=True)
-                    subprocess.run(f"snakemake --snakefile '{GUAP_DIR}/workflows/WES/Snakefile' --configfile '{all_args['working_dir']}/config.yaml' -j {all_args['threads']} --progress {all_args['smk_extra_args']}", shell=True)
+                    subprocess.run(f"snakemake --snakefile '{GUAP_DIR}/workflows/{workflow}/Snakefile' --configfile '{all_args['working_dir']}/config.yaml' -j {all_args['threads']} --progress {all_args['smk_extra_args']}", shell=True)
 
                 print(f"{PRP}{runtime.elapsed()}{NC}")
             elif all_args['dry_run']:
