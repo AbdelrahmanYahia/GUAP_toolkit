@@ -63,7 +63,7 @@ GUAP incorporates various modules, classes, and functions written in Python to i
 
 Great thought and effort have been invested in GUAP to ensure it is user-friendly, fast, reliable, and reproducible. GUAP aims to address common bioinformatics challenges faced by researchers, such as package installation, workflow creation, and testing different approaches.
 
-During the development of GUAP, the creator aimed to automate tasks encountered as a bioinformatics research associate. GUAP incorporates solutions to various challenges, including testing different settings and tools to determine the best fit for the samples. With GUAP, users can modify the entire workflow with just a few arguments, providing incredible flexibility and adaptability.
+During the development of GUAP, the creator aimed to automate tasks encountered bioinformatic researchs. GUAP incorporates solutions to various challenges, including testing different settings and tools to determine the best fit for the samples. With GUAP, users can modify the entire workflow with just a few arguments, providing incredible flexibility and adaptability.
 
 With GUAP, there's no need to create sample sheets, modify configurations, or install packages manually. During installation, GUAP automatically installs most required packages in Conda. These environments can be reused within GUAP or independently.
 
