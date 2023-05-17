@@ -1,0 +1,135 @@
+[[1]]
+[1] "dada2 already installed"
+
+[[2]]
+[1] "viridis already installed"
+
+[[3]]
+[1] "hrbrthemes already installed"
+
+[[4]]
+[1] "tidyverse already installed"
+
+[[5]]
+[1] "phyloseq already installed"
+
+[[6]]
+[1] "Biostrings already installed"
+
+[[7]]
+[1] "vegan already installed"
+
+[[8]]
+[1] "knitr already installed"
+
+[[9]]
+[1] "DECIPHER already installed"
+
+[[10]]
+[1] "Installing 'phangorn' using install.package()"
+
+$out
+[1] ""
+
+$error
+[1] ""
+
+$warning
+[1] "package ‘phangorn’ is not available for this version of R\n‘phangorn’ version 2.11.1 is in the repositories but depends on R (>= 4.1.0)\n\nA version of this package for your version of R might be available elsewhere,\nsee the ideas at\nhttps://cran.r-project.org/doc/manuals/r-patched/R-admin.html#Installing-packages"
+
+$pass
+[1] FALSE
+
+[[15]]
+[1] "Installing 'phangorn' using install.package() failed"
+
+[[16]]
+[1] "trying to install 'phangorn' using BiocManager::install()"
+
+$out
+[1] ""
+
+$error
+[1] ""
+
+$warning
+[1] "package ‘phangorn’ is not available for Bioconductor version '3.12'\n‘phangorn’ version 2.11.1 is in the repositories but depends on R (>= 4.1.0)\n\nA version of this package for your version of R might be available elsewhere,\nsee the ideas at\nhttps://cran.r-project.org/doc/manuals/r-patched/R-admin.html#Installing-packages"
+
+$pass
+[1] FALSE
+
+[[21]]
+[1] "Installing 'phangorn'failed and not found in BiocManager check the log"
+
+[[22]]
+[1] "ComplexHeatmap already installed"
+
+[[23]]
+[1] "microbiome already installed"
+
+[[24]]
+[1] "eulerr already installed"
+
+[[25]]
+[1] "DESeq2 already installed"
+
+[[26]]
+[1] "PCAtools already installed"
+
+[[27]]
+[1] "WGCNA already installed"
+
+[[28]]
+[1] "Installing 'EnhancedVolcano' using install.package()"
+
+$out
+[1] ""
+
+$error
+[1] ""
+
+$warning
+[1] "package ‘EnhancedVolcano’ is not available for this version of R\n\nA version of this package for your version of R might be available elsewhere,\nsee the ideas at\nhttps://cran.r-project.org/doc/manuals/r-patched/R-admin.html#Installing-packages"
+
+$pass
+[1] FALSE
+
+[[33]]
+[1] "Installing 'EnhancedVolcano' using install.package() failed"
+
+[[34]]
+[1] "trying to install 'EnhancedVolcano' using BiocManager::install()"
+
+$out
+[1] ""
+
+$error
+[1] ""
+
+$warning
+[1] "installation of package ‘ragg’ had non-zero exit status"
+
+$pass
+[1] FALSE
+
+[[39]]
+[1] "Installing 'EnhancedVolcano'failed and not found in BiocManager check the log"
+
+[[40]]
+[1] "DEGreport already installed"
+
+[[41]]
+[1] "optparse already installed"
+
+[[42]]
+[1] "ggplot2 already installed"
+
+[[43]]
+[1] "gridExtra already installed"
+
+[[44]]
+[1] "pheatmap already installed"
+
+[[45]]
+[1] "RColorBrewer already installed"
+
