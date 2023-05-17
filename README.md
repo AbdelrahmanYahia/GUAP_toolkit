@@ -21,9 +21,9 @@ However, GUAP provides flexibility for more advanced specifications:
 
 ```bash
 guap 16s -i samples -o out -m sample-metadata.tsv \
-	-c QIIME2_silva/Silva_Classifier.qza \
-	--skip-QC -t 65 -mo 4 -n run1 --bash \
-	-cm pooled --export-figs --condition-name condition \
+	-c silva/Silva_Classifier.qza --skip-QC \
+	 -t 65 -mo 4 -n run1 -cm pooled  \
+	--export-figs --condition-name condition \
 	-ef 9 -er 10 --remove-primers
 ```
 
