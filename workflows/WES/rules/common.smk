@@ -46,6 +46,7 @@ def get_final_output(wildcards):
 
     if variant_callers == "GATK":
         final_input.extend(expand("GATK/{sample}_{aligner}_picard.pdf", sample = samples, aligner = aligners))
+
     return final_input
 
 include: 'variant_caller.smk'
@@ -53,6 +54,7 @@ include: 'bam_processing.smk'
 include: 'QC.smk'
 include: 'genome_align.smk'
 include: 'utils.smk'
+include: 'baserecalipration.smk'
 
 
 

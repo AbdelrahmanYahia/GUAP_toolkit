@@ -30,7 +30,6 @@ rule HaplotypeCaller:
             -I {input} --native-pair-hmm-threads {threads} -O {output}
         """
 
-
 rule mpileup:
     input:
         "{aligner}/{sample}_picard.dedub.bam"

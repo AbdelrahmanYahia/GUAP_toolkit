@@ -29,16 +29,6 @@ rule bwa_align:
             -R "@RG\\tID:$RGID\\tSM:$SM\\tPL:$PL\\tLB:$LB\\tPU:$PU" {params.index} {input.R1} {input.R2} > {output} 2> {log.bwa}
         """
 
-rule convert_sam:
-    input: 
-    	"bwa/{sample}.sam"
-    
-    output: 
-    	"bwa/{sample}.bam"
-    
-    shell: 
-    	"samtools view -hbo {output} {input}"
-
 
 rule bowtie_align:
     input:
@@ -63,7 +53,7 @@ rule bowtie_align:
 
 rule add_read_group:
     input: "bowtie2/{sample}.noRG.sam"
-    output: "bowtie2/{sample}.bam"
+    output: "bowtie2/{sample}.sorted.bam"
     shell:
         """
         PL="Illumina"
@@ -73,6 +63,7 @@ rule add_read_group:
             -PU {wildcards.sample} -SM {wildcards.sample} \
             -CREATE_INDEX true
         
-        samtools view -hbo {output} bowtie2/{wildcards.sample}.sam
+        samtools sort bowtie2/{wildcards.sample}.sam -o {output}
+        samtools index {output}
         """
 
