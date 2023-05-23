@@ -20,7 +20,6 @@ rule qiimeimport:
         --o-visualization {output.vis} 
         """
 
-
 rule QIIME_Quality_filter:
     input:
         "QIIME2/demux/paired-end-demux.qza"
@@ -40,7 +39,6 @@ rule QIIME_Quality_filter:
             --m-input-file QIIME2/demux/demux-filter-stats.qza \
             --o-visualization {output.viz}
         """
-
 
 rule qiimeimportdada:
     input:

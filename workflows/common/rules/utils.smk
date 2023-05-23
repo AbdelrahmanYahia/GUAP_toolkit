@@ -5,14 +5,12 @@ def get_qc_input(wildcards):
     inputs = []
     inputs.extend(expand(
         f"{config['input']}/{{sample}}_{RS}{{R}}{TAIL}.{EXT}",
-        ext = ["zip", "html"],
         R = [1, 2],
         sample = samples_names
     ))
     if config["trimmomatic"] is True:
         inputs.extend(expand(
                 f"trimmomatic/{{sample}}_{RS}{{R}}.{EXT}",
-                ext = ["zip", "html"],
                 R = [1, 2],
                 sample = samples
         ))
@@ -22,19 +20,10 @@ def get_decompress_input(wildcards):
     inputs = []
     inputs.extend(expand(
         f"{config['input']}/{{sample}}_{RS}{{R}}{TAIL}.{EXTT}",
-        ext = ["zip", "html"],
         R = [1, 2],
         sample = samples_names
     ))
-    if config["trimmomatic"] is True:
-        inputs.extend(expand(
-                f"trimmomatic/{{sample}}_{RS}{{R}}.{EXTT}",
-                ext = ["zip", "html"],
-                R = [1, 2],
-                sample = samples
-        ))
     return inputs
-
 
 def get_align_input(wildcards):
     sample = wildcards.sample

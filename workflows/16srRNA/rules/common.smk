@@ -1,27 +1,21 @@
-PATH = config["path"]
-EXTT = config["ext"]
-EXT = EXTT.replace(".gz","")
-RS = config["R"]
-TAIL = config["tail"]
-sample_table_file=config.get('sampletable','samples.tsv')
-SampleTable = pd.read_table(sample_table_file,index_col=0)
-SAMPLES = list(SampleTable.index)
-SAMPLES_IDs = list(SampleTable.iloc[:, 0])
-ALL_THREADS = config["threads"]
-DOWNSTREAM = config["downstream"]
-MEM = config["total_mem"]
-USE_THREADS_QIIME = ALL_THREADS
-USE_MEM = int((MEM/2)*1000)
-GUAP_FOLDER = config["GUAP_DIR"]
 
 common_rules = config["common_rules"]
 include: f'{common_rules}/common.smk'
 
 
+EXTT = config["ext"]
+EXT = EXTT.replace(".gz","")
+DOWNSTREAM = config["downstream"]
+USE_THREADS_QIIME = ALL_THREADS
+USE_MEM = int((MEM/2)*1000)
+R1_pattern = get_R_pattern(1)
+R2_pattern = get_R_pattern(2)
+
 if ALL_THREADS <= 4:
     USE_THREADS = 1
 else:
     USE_THREADS = 4
+
 
 def get_final_output(wildcards):
     final_input = []
@@ -78,6 +72,17 @@ def get_final_output(wildcards):
         ])
     return final_input
 
+def get_R_pattern(n):
+    if config["trimmomatic"] or config["remove_primers"]:
+        return(f"_{RS}{n}.{EXT}")
+    else:
+        if config["naming_pattern"] == "illumina"
+            return(f"*S[0-9]+{lane}_{RS}{n}{TAIL}.{EXT}")
+        else:
+            return(f"*{lane}_{RS}{n}{TAIL}.{EXT}")
+
+
+
 def get_analysis_input_dir():
     if config["trimmomatic"]:
         if config["remove_primers"]:
@@ -87,7 +92,8 @@ def get_analysis_input_dir():
     elif config["remove_primers"]: 
         return("cutadapt")
     else:
-        return("reads")
+        return(PATH)
+
 
 def get_rename_prefix():
     if config["deblur"]:
@@ -113,11 +119,6 @@ def get_analysis_input():
     else:
         return("multiqc/multiqc_report.html")
 
-def get_cutadapt_input():
-    if config["trimmomatic"]:
-        return("trimmomatic")
-    else:
-        return("reads")
 
 def get_classifeir_input(wildcards):
     if config["classifier"] == "dada":
@@ -125,14 +126,34 @@ def get_classifeir_input(wildcards):
     else:
         return("QIIME2/rep-seqs.qza")
 
+
 def get_multiqc_input(wildcards):
     final_input = []
-    final_input = expand(f"QC/{{sample}}_R{{R}}_fastqc.html",sample=SAMPLES_IDs, R=[1,2])
+    final_input.extend(expand(
+        f"{config['input']}/{{sample}}_{RS}{{R}}{TAIL}.{{ext}}",
+        ext = ["zip", "html"],
+        R = [1, 2],
+        sample = samples_names
+    ))
+
     if config["trimmomatic"]:
-        final_input.extend(expand(f"trimmomatic/{{sample}}_R1{EXT}", sample=SAMPLES_IDs))
+        final_input.extend(expand(
+                f"trimmomatic/{{sample}}_{RS}{{R}}.{EXT}",
+                R = [1, 2],
+                sample = samples
+        ))
+    
     if config["remove_primers"]:
-        final_input.extend(expand(f"cutadapt/{{sample}}_R1{EXT}", sample=SAMPLES_IDs))   
+        final_input.extend(expand(
+                f"cutadapt/{{sample}}_{RS}{{R}}.{EXT}",
+                R = [1, 2],
+                sample = samples
+        ))    
+    
     return final_input
+
+
+
 
 include: "ASV.smk"
 include: "downstream_QIIME2.smk"
@@ -140,5 +161,5 @@ include: "handling.smk"
 include: "classify.smk"
 include: "downstream_R.smk"
 include: "import_fx.smk"
-include: GUAP_FOLDER+"/workflows/common/rules/test/QC.smk"
+include: "QC.smk"
 

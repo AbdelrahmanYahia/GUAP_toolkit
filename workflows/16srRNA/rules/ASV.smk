@@ -7,7 +7,7 @@ rule dada2_infer:
         seqt="DADA2/seqtab-nochim.txt"
     params:
         indir=f"{AID}",
-        mydir=f"{GUAP_FOLDER}/bin/16s/",
+        mydir=f"{GUAP_FOLDER}/workflows/16srRNA",
         t=config["trunc_f"],
         T=config["trunc_r"],
         l=config["trim_l"],
@@ -16,7 +16,9 @@ rule dada2_infer:
         E=config["maxee_r"],
         n=config["name"],
         m=config["min_overlap"],
-        chim=config["chimera_method"]
+        chim=config["chimera_method"],
+        R1=R1_pattern,
+        R2=R2_pattern
 
     threads: config["threads"]
     shell:
@@ -30,8 +32,8 @@ rule dada2_infer:
                 -l {params.l} \
                 -r {params.r} \
                 -e {params.e} \
-                --r1-pattern '_R1.fastq' \
-		        --r2-pattern '_R2.fastq' \
+                --r1-pattern {params.R1} \
+		        --r2-pattern {params.R2} \
                 -m {params.m} --chimethod {params.chim} \
                 -E {params.E} -s --use-exsisting
         """

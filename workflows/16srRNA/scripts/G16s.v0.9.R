@@ -30,7 +30,6 @@ option_list = list(
   make_option("--r2-pattern", type="character",
               help="DADA2 input files pattaren", metavar="character"),
 
-
   make_option(c("-l", "--triml"), type="integer", default=0, 
               help="trim left ", metavar="number"),
   make_option(c("-r", "--trimr"), type="integer", default=0, 

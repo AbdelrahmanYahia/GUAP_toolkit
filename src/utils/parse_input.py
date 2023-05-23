@@ -332,6 +332,7 @@ def parse_input_args(args): # takes args (object) returns dict of args informati
         "ext": ext,
         "tail": tail,
         "R": R,
+        "naming_pattern": pattern,
         "R1_pattern": f"_{R}1_{tail}.{EXT}",
         "R2_pattern": f"_{R}2_{tail}.{EXT}",
         "compressed" : compressed,

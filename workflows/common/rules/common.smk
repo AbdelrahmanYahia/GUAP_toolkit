@@ -34,8 +34,11 @@ include: f'{common_rules}/utils.smk'
 
 rule decompress:
     input: 
-        get_decompress_input
+        expand(f"{source}/{{samplename}}_{RS}{{R}}{TAIL}.{EXTT}",
+                samplename=samples_names,
+                R=[1,2]
+                )
     output:
-        temp(f"{source}/{{sample}}_{RS}{{R}}{TAIL}.{EXT}")
+        f"{source}/{{sample}}_{RS}{{R}}{TAIL}.{EXT}"
     shell:
         "gunzip {input}"

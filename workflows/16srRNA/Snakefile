@@ -2,7 +2,7 @@ import os
 import pandas as pd
 
 workdir: config["working_dir"]
-include: "rules/main.smk"
+include: "rules/common.smk"
 
 
 rule all:

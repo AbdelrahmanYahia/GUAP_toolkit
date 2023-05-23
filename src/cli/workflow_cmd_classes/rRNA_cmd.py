@@ -11,6 +11,11 @@ class rRNA(WorkflowCli):
         basic_conf.add_argument('-i', '--input', help= "Input directory path", metavar='path',type=str)  
         basic_conf.add_argument('-o', '--output', help= "Output directory path", metavar='path',type=str)  
         basic_conf.add_argument('-t', '--threads', help= "Number of threads", type=int)
+        basic_conf.add_argument(
+                                '--create-metadata-table', 
+                                help= "create empty metadata at output dir",
+                                action="store_true"
+                            )
 
         # QC
         qc_conf = parser.add_argument_group(f'{CYN}QC{NC}')
@@ -19,8 +24,47 @@ class rRNA(WorkflowCli):
         qc_conf.add_argument('-fp',"--forward-primer", help='forward primmer for cutadapt or train set ',required='--train' in sys.argv or '--remove-primers' in sys.argv)
         qc_conf.add_argument('-rp',"--reverse-primer", help='reverse primmer for cutadapt or train set', required= '--train' in sys.argv or '--remove-primers' in sys.argv)
         qc_conf.add_argument('--trimmomatic', dest='trimmomatic', action='store_true', help="Use trimmomatic [default]")
-        qc_conf.add_argument("--trim-min-length",  type=int,default=30, help='trimmomatic min length') 
-        qc_conf.add_argument('--skip-trimmomatic', dest='trimmomatic', action='store_false', help="Do NOT use trimmomatic")
+        
+        qc_conf.add_argument(
+            '--trim-t', 
+            help= "Number of threads to use during trim step", 
+            type=int ,
+            metavar = "N",
+            default= 4 
+        )
+
+        qc_conf.add_argument(
+            "--trim-min-length", 
+            type=int,
+            default=30,
+            metavar = "N",
+            help='trimmomatic min length [default = 30]'
+        )
+
+        qc_conf.add_argument(
+            "--slidingwindow-size", 
+            type=int,
+            default=4,
+            metavar = "N",
+            help='trimmomatic sliding window size [default = 4]'
+        )
+
+        qc_conf.add_argument(
+            "--slidingwindow-quality", 
+            type=int,
+            default=10,
+            metavar = "N",
+            help='trimmomatic sliding window quality score [default = 10]'
+        )
+
+        qc_conf.add_argument(
+            '--trimmomatic-extra-args',
+             type=str,
+            metavar="='-args'",
+            help="A string value of extra args for trimmomatic (must be used with = with no spaces (--trimmomatic-extra-args='-arg1 -arg2'))",
+            default=""
+        )
+        
         qc_conf.add_argument('--skip-QC', action='store_true', help="Skipp Fastqc step")
 
         # asv options
@@ -92,6 +136,7 @@ class rRNA(WorkflowCli):
         other_conf.add_argument('--version', action='version', help="Print version number")
         other_conf.add_argument('--verbose', action='store_true', help="verbose")
         other_conf.add_argument('--quit', dest='verbose', action='store_false', help="print many output")
+        
         other_conf.add_argument(
             '--print-last-run', 
             action='store_true', 
