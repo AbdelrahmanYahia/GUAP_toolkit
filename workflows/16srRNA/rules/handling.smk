@@ -1,5 +1,4 @@
 PREF = get_rename_prefix()
-AID = get_analysis_input_dir()
 
 
 rule rename:

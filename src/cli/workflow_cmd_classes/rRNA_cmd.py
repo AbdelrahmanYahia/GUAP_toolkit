@@ -131,12 +131,39 @@ class rRNA(WorkflowCli):
 
         # other options
         other_conf = parser.add_argument_group(f'{CYN}Other{NC}')
-        other_conf.add_argument('--continue', action='store_true', help="continue analysis when re-run")
-        other_conf.add_argument('-n',"--name", default="/GUAP-16s-dada2", help='Name of files') 
-        other_conf.add_argument('--version', action='version', help="Print version number")
-        other_conf.add_argument('--verbose', action='store_true', help="verbose")
-        other_conf.add_argument('--quit', dest='verbose', action='store_false', help="print many output")
-        
+
+        other_conf.add_argument(
+            '--continue', 
+            action='store_true', 
+            help="continue analysis when re-run"
+        )
+
+        other_conf.add_argument(
+            '--overwrite', 
+            action='store_true', 
+            help="overwrite output dir if exsits"
+        )
+
+        other_conf.add_argument(
+            '-n',"--name", 
+            default=f"RNA_run[{os.environ['start_time']}]", 
+            metavar = 'str',
+            help=f"Name of files [ default = RNA_run[date time] ]"
+        )
+
+        other_conf.add_argument(
+            '--verbose', 
+            action='store_true', 
+            help="verbose"
+        )
+
+        other_conf.add_argument(
+            '--quit', 
+            dest='verbose', 
+            action='store_false', 
+            help="print many output"
+        )
+
         other_conf.add_argument(
             '--print-last-run', 
             action='store_true', 
@@ -146,9 +173,17 @@ class rRNA(WorkflowCli):
         other_conf.set_defaults(verbose=False)
 
     def run(self, args):
-        # check if no classifier is selected 
-        if args.train is False and args.classifier is None:
-            glogger.prnt_fatel(f"{RED}--classifier is required when --train is not set.{NC}")
+        if not args.print_last_run:
+            # check if no classifier is selected 
+            if args.train is False and args.classifier is None:
+                glogger.prnt_fatel(f"{RED}--classifier is required when --train is not set.{NC}")
+
+            # check if classifier exsits 
+            if not os.path.isfile(args.classifier):
+                glogger.prnt_fatel(f"{RED}{args.classifier} Doesn't exsit!{NC}")
+            
+            
+            check_metadata(args)
 
         # check if proper classifier is selected with the analysis
         if args.deblur is True and args.choose_classifier == "dada":
@@ -159,10 +194,8 @@ class rRNA(WorkflowCli):
             glogger.prnt_fatel(f"{RED}--choose-classifier dada is not currently supported with QIIME2 DADA2.{NC}")
 
 
-        # check if classifier exsits 
-        if not os.path.isfile(args.classifier):
-            glogger.prnt_fatel(f"{RED}{args.classifier} Doesn't exsit!{NC}")
+
             
 
-        check_metadata(args)
+
         super().run(args, "16srRNA")

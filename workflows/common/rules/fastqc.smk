@@ -8,7 +8,7 @@ rule Fastqc:
         html=f"QC/{{sample}}_R{{R}}_fastqc.html"
         
     benchmark: f"benchamrks/QC/{{sample}}_{RS}{{R}}fastqc.txt"
-    threads: 2
+    threads: 4
     params:
         path="QC"
     

@@ -3,13 +3,13 @@ common_rules = config["common_rules"]
 include: f'{common_rules}/common.smk'
 
 
+
 EXTT = config["ext"]
 EXT = EXTT.replace(".gz","")
 DOWNSTREAM = config["downstream"]
 USE_THREADS_QIIME = ALL_THREADS
 USE_MEM = int((MEM/2)*1000)
-R1_pattern = get_R_pattern(1)
-R2_pattern = get_R_pattern(2)
+
 
 if ALL_THREADS <= 4:
     USE_THREADS = 1
@@ -72,15 +72,15 @@ def get_final_output(wildcards):
         ])
     return final_input
 
+
 def get_R_pattern(n):
     if config["trimmomatic"] or config["remove_primers"]:
         return(f"_{RS}{n}.{EXT}")
     else:
-        if config["naming_pattern"] == "illumina"
+        if config["naming_pattern"] == "illumina":
             return(f"*S[0-9]+{lane}_{RS}{n}{TAIL}.{EXT}")
         else:
             return(f"*{lane}_{RS}{n}{TAIL}.{EXT}")
-
 
 
 def get_analysis_input_dir():
@@ -130,10 +130,10 @@ def get_classifeir_input(wildcards):
 def get_multiqc_input(wildcards):
     final_input = []
     final_input.extend(expand(
-        f"{config['input']}/{{sample}}_{RS}{{R}}{TAIL}.{{ext}}",
+        f"QC/{{sample}}_{RS}{{R}}_fastqc.{{ext}}",
         ext = ["zip", "html"],
         R = [1, 2],
-        sample = samples_names
+        sample = samples
     ))
 
     if config["trimmomatic"]:
@@ -152,7 +152,9 @@ def get_multiqc_input(wildcards):
     
     return final_input
 
-
+AID = get_analysis_input_dir()
+R1_pattern = get_R_pattern(1)
+R2_pattern = get_R_pattern(2)
 
 
 include: "ASV.smk"

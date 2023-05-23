@@ -133,7 +133,7 @@ def check_metadata(args):
                 # exiting 
                 glogger.prnt_fatel("No metadata supplied or created!")
         # creating metadata file 
-        glogger.prnt_warning(f"{YEL}I will create one at '{args.output}', \nplease re-run the analysis with \n-m {args.output}/sample-metada.tsv after modifing the file (check https://docs.qiime2.org/2021.11/tutorials/metadata/)\033[;39;m")
+        glogger.prnt_warning(f"I will create one at '{args.output}', {YEL}\nplease re-run the analysis with: \n -m {args.output}/sample-metada.tsv after modifing the file\n{NC}(check https://docs.qiime2.org/2021.11/tutorials/metadata/)")
         # creating empty data frame to store metadata info
         header = pd.DataFrame({"1": ["#q2:types", "categorical"]}).T
         header.columns = ["sample-id", "condition"]
@@ -142,13 +142,16 @@ def check_metadata(args):
         c = 2
         # get sample ids
         for sample in samples_IDs:
-            new_samples[c] = [sample["Sample ID"], "BLANK"]
+            new_samples[c] = [sample, "BLANK"]
             c += 1
         # store sample IDs and BLANK at new df, and export
         samples_df = pd.DataFrame(new_samples).T
         samples_df.columns = ["sample-id", "condition"]
         samples_df = samples_df.sort_values(["sample-id"])
         metadata_file = pd.concat([header, samples_df])
+        # Create the directory if it doesn't exist
+        if not os.path.exists(outpath):
+            os.makedirs(outpath)
         metadata_file.to_csv(outpath+"/"+"sample-metadata.tsv",sep='\t',index=False) 
         args.metadata = f"{outpath}/sample-metadata.tsv"
         glogger.prnt_fatel(f"{GRE}Metadata empty file created, {RED}Exiting...{NC}")

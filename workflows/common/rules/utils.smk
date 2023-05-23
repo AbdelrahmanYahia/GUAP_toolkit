@@ -4,7 +4,7 @@ def get_sample_number(sample):
 def get_qc_input(wildcards):
     inputs = []
     inputs.extend(expand(
-        f"{config['input']}/{{sample}}_{RS}{{R}}{TAIL}.{EXT}",
+        f"{PATH}/{{sample}}_{RS}{{R}}{TAIL}.{EXT}",
         R = [1, 2],
         sample = samples_names
     ))
@@ -19,7 +19,7 @@ def get_qc_input(wildcards):
 def get_decompress_input(wildcards):
     inputs = []
     inputs.extend(expand(
-        f"{config['input']}/{{sample}}_{RS}{{R}}{TAIL}.{EXTT}",
+        f"{PATH}/{{sample}}_{RS}{{R}}{TAIL}.{EXTT}",
         R = [1, 2],
         sample = samples_names
     ))
@@ -45,8 +45,8 @@ def get_align_input(wildcards):
             zip(
                 ["R1", "R2"],
                 [
-                    f"{config['input']}/{sample}_{units.sample_number}{lane}_{RS}1{TAIL}.{EXT}",
-                    f"{config['input']}/{sample}_{units.sample_number}{lane}_{RS}2{TAIL}.{EXT}",
+                    f"{PATH}/{sample}_{units.sample_number}{lane}_{RS}1{TAIL}.{EXT}",
+                    f"{PATH}/{sample}_{units.sample_number}{lane}_{RS}2{TAIL}.{EXT}",
                 ],
             )
         )
@@ -62,8 +62,8 @@ def get_raw_fasta(wildcards):
         zip(
             ["R1", "R2"],
                 [
-                    f"{config['input']}/{sample}_{units.sample_number}{lane}_{RS}1{TAIL}.{EXT}",
-                    f"{config['input']}/{sample}_{units.sample_number}{lane}_{RS}2{TAIL}.{EXT}",
+                    f"{PATH}/{sample}_{units.sample_number}{lane}_{RS}1{TAIL}.{EXT}",
+                    f"{PATH}/{sample}_{units.sample_number}{lane}_{RS}2{TAIL}.{EXT}",
                 ]
         )
     )
