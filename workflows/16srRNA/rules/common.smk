@@ -16,6 +16,14 @@ if ALL_THREADS <= 4:
 else:
     USE_THREADS = 4
 
+def get_dada_RAW_input(wildcards):
+    inputs = []
+    inputs.extend(expand(
+        f"{PATH}/{{sample}}_{RS}{{R}}{TAIL}.{EXT}",
+        R = [1, 2],
+        sample = samples_names
+    ))
+    return inputs
 
 def get_final_output(wildcards):
     final_input = []
@@ -114,7 +122,7 @@ def get_analysis_input():
         return("multiqc/multiqc_report.html")
     
     elif config["skip_QC"] :
-        return(unpack(get_raw_fasta))
+        return(unpack(get_dada_RAW_input))
     
     else:
         return("multiqc/multiqc_report.html")

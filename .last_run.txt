@@ -1,1 +1,1 @@
-16s -i data/samples/16s/MiSeq_SOP -o test_16s_1 -ef 2 -er 2 -tf 260 -tr 160 --choose-classifier dada --trimmomatic -c ./data/refs/16s/silva_nr99_v138.1_wSpecies_train_set.fa.gz -m data/samples/16s/sample-metadata.tsv --overwrite --smk-extra-args=--verbose
+16s -i data/samples/16s/MiSeq_SOP -o test_16s_1 -ef 2 -er 2 -tf 260 -tr 160 --choose-classifier dada -c ./data/refs/16s/silva_nr99_v138.1_wSpecies_train_set.fa.gz -m data/samples/16s/sample-metadata.tsv --overwrite --skip-QC

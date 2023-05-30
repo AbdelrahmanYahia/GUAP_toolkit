@@ -27,10 +27,10 @@ class BWGS(WorkflowCli):
         parser.add_argument('--kraken2-index', help= "", type=str, metavar='path')
 
         parser.add_argument('--skip-QC', action='store_true', help="Skip  step")
-        parser.add_argument('--skip-check-contaminant', action='store_true', help="Skip  step")
-        parser.add_argument('--skip-assembly', action='store_true', help="Skip  step")
-        parser.add_argument('--skip-assembly-QC', action='store_true', help="Skip  step")
-        parser.add_argument('--pre-check-contaminant', action='store_true', help="Skip  step")
+        parser.add_argument('--skip-check-contaminant', action='store_true', help="Skip check contaminant step")
+        parser.add_argument('--skip-assembly', action='store_true', help="Skip assembly step")
+        parser.add_argument('--skip-assembly-QC', action='store_true', help="Skip QC step")
+        parser.add_argument('--pre-check-contaminant', action='store_true', help="Skip pre check contaminant step")
 
         parser.add_argument('--continue', action='store_true', help="continue analysis when re-run")
         parser.add_argument('--overwrite', action='store_true', help="overwrite output dir if exsits")

@@ -195,7 +195,6 @@ class rRNA(WorkflowCli):
 
 
 
-            
 
 
         super().run(args, "16srRNA")

@@ -1,13 +1,14 @@
 PREF = get_rename_prefix()
 
-
 rule rename:
     input:
         seqs=f"QIIME2/{PREF}-rep-seqs.qza",
         tab=f"QIIME2/{PREF}-table.qza"
+
     output:
         seqs="QIIME2/rep-seqs.qza",
         tab="QIIME2/table.qza"
+
     shell:
         """
         mv {input.seqs} {output.seqs}
@@ -19,7 +20,8 @@ rule remove_primers:
         unpack(get_align_input)
     output:
         of1 = f"cutadapt/{{sample}}_{RS}1.{EXT}",
-        of2 = f"cutadapt/{{sample}}_{RS}2.{EXT}",
+        of2 = f"cutadapt/{{sample}}_{RS}2.{EXT}"
+        
     log: 
         "logs/cutadapt/{sample}.txt"
     threads: USE_THREADS

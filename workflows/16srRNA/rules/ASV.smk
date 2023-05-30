@@ -24,9 +24,9 @@ rule dada2_infer:
     shell:
         """
             Rscript {params.mydir}/scripts/G16s.v0.9.R \
-                -i ${{PWD}}/{params.indir} -o "${{PWD}}/DADA2" \
+                -i {params.indir} -o "${{PWD}}/DADA2" \
                 -p {threads} \
-                -n {params.n} \
+                -n '{params.n}' \
                 -t {params.t} \
                 -T {params.T} \
                 -l {params.l} \

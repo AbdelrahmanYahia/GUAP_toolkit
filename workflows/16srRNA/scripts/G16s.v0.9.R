@@ -100,11 +100,10 @@ dir.create(paste0(outdir), showWarnings = FALSE)
 fnFs <- sort(list.files(path, pattern=opt$`r1-pattern`, full.names = TRUE))
 fnRs <- sort(list.files(path, pattern=opt$`r2-pattern`, full.names = TRUE))
 sample.names <- sapply(strsplit(basename(fnFs), "_"), `[`, 1)
-filtFs <- file.path(path, "filtered", paste0(sample.names, "_F_filt.fastq.gz"))
-filtRs <- file.path(path, "filtered", paste0(sample.names, "_R_filt.fastq.gz"))
+filtFs <- file.path(outdir, "filtered", paste0(sample.names, "_F_filt.fastq.gz"))
+filtRs <- file.path(outdir, "filtered", paste0(sample.names, "_R_filt.fastq.gz"))
 names(filtFs) <- sample.names
 names(filtRs) <- sample.names
-
 
 if (opt$`use-exsisting`){
   if ( file.exists(paste0(outdir,"/","out",".RDS"))){
@@ -124,7 +123,6 @@ if (opt$`use-exsisting`){
 }else{
   write(paste0("\033[0;", 32, "m","Filter and Trim started...","\033[0m"), stderr())
   # write(paste0("\033[0;", 32, "m","parameters are: ",opt$trunclenf,opt$trunclenr,opt$maxeef,opt$maxeer,"\033[0m"), stderr())
-  
   out <- filterAndTrim(fnFs, filtFs, fnRs, filtRs,
                       maxN=0, truncQ=2, rm.phix=TRUE, 
                       maxEE=c(opt$maxeef,opt$maxeer),
