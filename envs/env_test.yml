@@ -16,14 +16,12 @@ dependencies:
   - bamtools
   - bcftools
   - vcftools
-  - bgzip
   - trimmomatic
   - cutadapt
   - rsem
   - rtg-tools
-  - subreads
+  - subread
   - qiime2
-  - ensemble-vep
   - entrez-direct
   - R
   - bioconductor-biobase
@@ -81,7 +79,6 @@ dependencies:
   - libsanitizer
   - libsodium
   - libssh2
-  - libstdcxx
   - libtiff
   - libuuid
   - libuv
