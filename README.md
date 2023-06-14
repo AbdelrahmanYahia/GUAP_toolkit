@@ -68,19 +68,7 @@ With GUAP, there's no need to create sample sheets, modify configurations, or in
 
 ## **Installation**
 
-For installation instructions and detailed usage examples, please refer to the **[Installation Guide]**.
-
-## **Contributions and Feedback**
-
-Contributions to GUAP are welcome! If you encounter any issues, have suggestions, or would like to contribute to the project, please visit the **[GitHub repository](https://github.com/AbdelrahmanYahia/GUAP_toolkit/)** and create an issue or submit a pull request.
-
-## **License**
-
-GUAP is released under the **[MIT License]**. Please review the license file for more information.
-
-## **Acknowledgements**
-
-The development of GUAP was made possible by the contributions of 
+Installation instructions and detailed usage will be updated once the tools is finished
 
 ## **Contact**
 
