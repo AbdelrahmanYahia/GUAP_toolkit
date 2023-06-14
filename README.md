@@ -15,7 +15,7 @@ The Genomics Unit Analysis Pipelines (GUAP) toolkit is a collection of workflows
 A basic GUAP command may look like this:
 
 ```bash
-guap 16s -i indir -o outdir -m sample-metadat.csv -c classifier.qza
+guap [16s|WES|RNA|BWGS] -i indir -o outdir -m sample-metadat.csv <rest of required params>
 ```
 
 However, GUAP provides flexibility for more advanced specifications:
