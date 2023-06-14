@@ -1,4 +1,5 @@
 # **Genomics Unit Analysis Pipelines (GUAP) Toolkit**
+# **!!!** This tools is still under development and **shouldn't be run!!**
 
 The Genomics Unit Analysis Pipelines (GUAP) toolkit is a collection of workflows and pipelines designed for routine NGS (Next-Generation Sequencing) work in the field of genomics. GUAP is built to provide reproducible analysis while allowing fine-tuning of workflows based on sample conditions. It is fast, easy to use, and operates on the Linux operating system via a command-line interface.
 
