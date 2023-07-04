@@ -1,61 +1,74 @@
 import os
 import pandas as pd
 
+# get options
+PATH = config["path"]
+EXTT = config["ext"]
+RS = config["R"]
+if config["decompress"]:
+    EXT = EXTT.replace(".gz","")
+else:
+    EXT = EXTT
+
+working_dir = config["working_dir"]
+sample_table_file=config.get('sampletable','samples.tsv')
+SampleTable = pd.read_table(sample_table_file)
+
+files_R1s = list(SampleTable.iloc[:, 1-1])
+files_R2s = list(SampleTable.iloc[:, 8-1])
+samples = list(SampleTable.iloc[:, 3-1]) # sample full name
+units = list(SampleTable.iloc[:, 2-1])
+samples_IDs = list(SampleTable.iloc[:, 4-1])
+# print(SampleTable)
+units = (
+    pd.read_csv('samples.tsv', sep="\t", dtype={"sample_id": str, "unit": str})
+    .set_index(["sample_id", "unit"], drop=False)
+    .sort_index()
+)
+
+ALL_THREADS = config["threads"]
+MEM = config["total_mem"]
 GUAP_FOLDER = config["GUAP_DIR"]
-aligners = config["aligner"]
-variant_callers = config["variant_caller"]
-out_dir = config["working_dir"]
+R = [1, 2]
+source = PATH
+
+working_dir = config["working_dir"]
+source_dir = config["GUAP_DIR"]
+common_rules = config["common_rules"]
+
+samples_dir = config["input"]
+
+out_dir = config["output"]
+
 ref_bwa = config["reference_index"]
-ref_bowtie2 = config["reference_index"]
+
+ref_bwa_path = config["reference_output_path"]
+ref_prefix = config["reference_output_prefix"]
+
 ref_fasta = config["reference_fasta"]
-known_variants = config["known_variants"]
+ref_fasta_path = os.path.dirname(ref_fasta)
+
 bed_file = config["bed_file"]
 
+known_variants_snps = config["known_variants_snps"]
+known_variants_indels = config["known_variants_indels"]
 
-bamfilename = ""
+nirvana_path = config["nirvana_path"]
+annovar_dir = config["annovar_path"]
 
-common_rules = config["common_rules"]
-include: f'{common_rules}/common.smk'
+Nirvana_cmd = f"{nirvana_path}/bin/Release/net*/Nirvana.dll"
+Nirvana_supplementray = f"{nirvana_path}/DB/SupplementaryAnnotation/GRCh38/"
+Nirvana_ref = f"{nirvana_path}/DB/References/Homo_sapiens.GRCh38.Nirvana.dat"
+Nirvana_cache = f"{nirvana_path}/DB/Cache/GRCh38/Both"
 
-def get_final_output(wildcards):
-    final_input = []
-    if config['skip_QC'] is False:
-        final_input.extend(expand(
-                f"QC/{{sample}}_{RS}{{R}}{TAIL}_fastqc.{{ext}}",
-                ext = ["zip", "html"],
-                R = [1, 2],
-                sample = samples_names
-        ))
-        if config["trimmomatic"] is True:
-            final_input.extend(expand(
-                f"QC/{{sample}}_{RS}{{R}}_fastqc.{{ext}}",
-                ext = ["zip", "html"],
-                R = [1, 2],
-                sample = samples
-            ))
-    final_input.extend(expand(
-        "{sample}_{aligner}.stats",
-         sample = samples, 
-         aligner = aligners))
+gff = config["gff_file"]
 
-    final_input.extend(expand(
-        "{variant_caller}/{sample}_{aligner}_picard.vcf", 
-        sample = samples, 
-        variant_caller = variant_callers,
-        aligner = aligners)) 
-
-    if variant_callers == "GATK":
-        final_input.extend(expand("GATK/{sample}_{aligner}_picard.pdf", sample = samples, aligner = aligners))
-
-    return final_input
-
-include: 'variant_caller.smk'
-include: 'bam_processing.smk'
-include: 'QC.smk'
-include: 'genome_align.smk'
-include: 'utils.smk'
-include: 'baserecalipration.smk'
-
-
-
+include: "utils.smk"
+include: "alignment.smk"
+include: "bam_processing.smk"
+include: "QC.smk"
+include: "variant_calling.smk"
+include: "variant_processing.smk"
+include: "annotation.smk"
+include: "samples_preprocessing.smk"
 
