@@ -1,4 +1,5 @@
 # **Genomics Unit Analysis Pipelines (GUAP) Toolkit**
+# **!!!** This tools is still under development and **shouldn't be run!!**
 
 The Genomics Unit Analysis Pipelines (GUAP) toolkit is a collection of workflows and pipelines designed for routine NGS (Next-Generation Sequencing) work in the field of genomics. GUAP is built to provide reproducible analysis while allowing fine-tuning of workflows based on sample conditions. It is fast, easy to use, and operates on the Linux operating system via a command-line interface.
 
@@ -14,7 +15,7 @@ The Genomics Unit Analysis Pipelines (GUAP) toolkit is a collection of workflows
 A basic GUAP command may look like this:
 
 ```bash
-guap 16s -i indir -o outdir -m sample-metadat.csv -c classifier.qza
+guap [16s|WES|RNA|BWGS] -i indir -o outdir -m sample-metadat.csv <rest of required params>
 ```
 
 However, GUAP provides flexibility for more advanced specifications:
@@ -67,19 +68,7 @@ With GUAP, there's no need to create sample sheets, modify configurations, or in
 
 ## **Installation**
 
-For installation instructions and detailed usage examples, please refer to the **[Installation Guide]**.
-
-## **Contributions and Feedback**
-
-Contributions to GUAP are welcome! If you encounter any issues, have suggestions, or would like to contribute to the project, please visit the **[GitHub repository](https://github.com/AbdelrahmanYahia/GUAP_toolkit/)** and create an issue or submit a pull request.
-
-## **License**
-
-GUAP is released under the **[MIT License]**. Please review the license file for more information.
-
-## **Acknowledgements**
-
-The development of GUAP was made possible by the contributions of 
+Installation instructions and detailed usage will be updated once the tools is finished
 
 ## **Contact**
 
