@@ -252,6 +252,5 @@ class WES(WorkflowCli):
             help="Prints last run on screen"
         )
 
-
     def run(self, args):
             super().run(args, "WES")

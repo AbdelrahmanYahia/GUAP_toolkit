@@ -54,6 +54,7 @@ def recogize_pattern(file_name): # takes string of fastq file name and returns d
     """ using re to recognize the naming pattern of samples (illumina, srr and general naming patten)"""
     # naming pattern for re 
     patterns = { # ! fix (_|\.) group for R pattern in dict config !
+        "Novagen": "(((.+)-(.+))([1|2])\.(fastq\.gz|fastq|fq\.gz|fq))",
         "illumina": "(((.+)_(S\d+)_(L00\d))_(R1|R2|r1|r2|read1|read2)_(00\d)\.(fastq\.gz|fastq|fq\.gz|fq))",
         "SRR": "(((SRR)(\d+))(_|\.)(1|2|R1|R2|r1|r2|read1|read2)\.(fastq\.gz|fastq|fq\.gz|fq))",
         "general": "(((.+))(_|\.)(1|2|R1|R2|r1|r2|read1|read2)\.(fastq\.gz|fastq|fq\.gz|fq))"
@@ -80,6 +81,9 @@ def recogize_pattern(file_name): # takes string of fastq file name and returns d
     if matched_pattern == "illumina":
         file_name, sample_name, sample_id, sample_number, read_num, lane, tail, ext = matched.groups()[0], matched.groups()[1], matched.groups()[2], matched.groups()[3], matched.groups()[5], matched.groups()[4], matched.groups()[6], matched.groups()[7]
 
+    elif matched_pattern == "Novagen":
+        sample, sample_name, sample_id, unit, read_num, ext = matched.groups()[0], matched.groups()[1], matched.groups()[2], matched.groups()[3], matched.groups()[4], matched.groups()[5]
+
     elif matched_pattern == "SRR":
         glogger.prnt_fatel(f"{RED}{matched_pattern}{NC} is currntly not supported sample naming pattern\nonly {GRE}'Illumina'{NC} naming pattern is supported at the moment")
         file_name, sample_name, sample_id, sample_number, read_num, lane, tail, ext = matched.groups()[0], matched.groups()[1], matched.groups()[3], "", matched.groups()[5], "", "", matched.groups()[6]
@@ -92,107 +96,31 @@ def recogize_pattern(file_name): # takes string of fastq file name and returns d
         glogger.prnt_fatel(f"{RED}Your Samples Pattern is an unfamiler pattern.{NC}\nPlease contact my Developpers and they will look into it :D")
         file_name = sample_name = sample_id = sample_number = read_num = lane = tail = ext = None
 
-    # Returns a dictionary of sample information
-    return {
-        "file_name": file_name,
-        "sample_name": sample_name,
-        "sample_id": sample_id,
-        "sample_number": sample_number,
-        "read_num": read_num,
-        "lane": lane,
-        "tail": tail,
-        "ext": ext,
-        "matched_pattern": ptrn_name
-    }
-
-def qiime_table_checker(df):
-    if ("sample-id" or "id" or "sampleid" or "sample id") in df.columns:
-        if "#q2:types" in (df.iloc[:1]).values.tolist()[0]:
-            return True
-        else:
-            return False
+    if matched_pattern == "Novagen":
+        return {
+            "file_name": sample,
+            "unit": unit,
+            "sample_name": sample_name,
+            "sample_id": sample_id,
+            "read_num" : read_num, 
+            "ext" : ext,
+            "matched_pattern": ptrn_name
+        }
+    
     else:
-        return False
+        # Returns a dictionary of sample information
+        return {
+            "file_name": file_name,
+            "sample_name": sample_name,
+            "sample_id": sample_id,
+            "sample_number": sample_number,
+            "read_num": read_num,
+            "lane": lane,
+            "tail": tail,
+            "ext": ext,
+            "matched_pattern": ptrn_name
+        }
 
-def check_metadata(args):
-    # samples dataframe and output path declaration 
-    samples = parse_samples(os.path.abspath(args.input))
-    samples_IDs = list(samples.iloc[:, 2])
-    outpath = os.path.abspath(args.output)
-
-    # check metadata file 
-    if args.metadata is None or args.create_metadata_table:
-        if args.create_metadata_table:
-            pass
-        else:
-            # prompt the user to create metadata file 
-            create_meta = input(f"{RED}No metadata file supplied,{NC} do I create an empty one with sample IDs? (y/n) ")
-            if create_meta == ( 'y' or 'Y'):
-                pass
-            else:
-                # exiting 
-                glogger.prnt_fatel("No metadata supplied or created!")
-        # creating metadata file 
-        glogger.prnt_warning(f"I will create one at '{args.output}', {YEL}\nplease re-run the analysis with: \n -m {args.output}/sample-metada.tsv after modifing the file\n{NC}(check https://docs.qiime2.org/2021.11/tutorials/metadata/)")
-        # creating empty data frame to store metadata info
-        header = pd.DataFrame({"1": ["#q2:types", "categorical"]}).T
-        header.columns = ["sample-id", "condition"]
-
-        new_samples = {}
-        c = 2
-        # get sample ids
-        for sample in samples_IDs:
-            new_samples[c] = [sample, "BLANK"]
-            c += 1
-        # store sample IDs and BLANK at new df, and export
-        samples_df = pd.DataFrame(new_samples).T
-        samples_df.columns = ["sample-id", "condition"]
-        samples_df = samples_df.sort_values(["sample-id"])
-        metadata_file = pd.concat([header, samples_df])
-        # Create the directory if it doesn't exist
-        if not os.path.exists(outpath):
-            os.makedirs(outpath)
-        metadata_file.to_csv(outpath+"/"+"sample-metadata.tsv",sep='\t',index=False) 
-        args.metadata = f"{outpath}/sample-metadata.tsv"
-        glogger.prnt_fatel(f"{GRE}Metadata empty file created, {RED}Exiting...{NC}")
-
-    else:
-        if not os.path.isfile(args.metadata):
-            glogger.prnt_fatel(f"{RED}{args.metadata} Doesn't exist!{NC}")
-        else:
-            # checking metadata file extension 
-            metadataname, metadataextension = os.path.splitext(args.metadata)
-            if metadataextension == (".tsv"):
-                the_file = pd.read_csv(args.metadata,sep="\t")
-            elif metadataextension == (".csv"):
-                the_file = pd.read_csv(args.metadata,sep="\t")
-            else:
-                glogger.prnt_fatel(f"{RED}{args.metadata} Have strange extension (use: tsv or csv){NC}")
-
-            rest_of_cols = the_file.columns[1:]
-            # checks all samples are present in the file with proper names
-            if False in samples['sample_id'].isin(the_file.T.iloc[0]).tolist():
-                glogger.prnt_fatel(f"{RED} Please check {args.metadata} sample IDs!\n{YEL}Note: {NC}You can re-run your code WITHOUT suppling a metadata file and \nGUAP will ask to create an empty one for you with the samples IDs.")
-     
-            else:
-                # check qiime2 format and modifing if not
-                if qiime_table_checker(the_file):
-                    if metadataextension == (".csv"):
-                        the_file.to_csv(outpath+"/"+"sample-metadata.tsv",sep='\t',index=False) 
-                        args.metadata = "{outpath}/sample-metadata.tsv"
-                else:
-                    print(f"{RED}Note:{NC}Modifing sample metadata file to be compatible with QIIME2")
-                    columns_names = rest_of_cols.to_list()
-                    columns_names.insert(0, 'sample-id')
-                    columns_names
-                    t = f'{(len(columns_names) -1 )* "categorical,"}'.split(",")[:-1]
-                    t.insert(0, "#q2:types")
-                    header_N = pd.DataFrame({1: t}).T
-                    header_N.columns = columns_names
-                    the_file.columns = columns_names
-                    last_file = pd.concat([header_N, the_file])
-                    last_file.to_csv(outpath+"/"+"sample-metadata.tsv",sep='\t',index=False) 
-                    args.metadata = f"{outpath}/sample-metadata.tsv"
 
 def parse_samples(inpath): # takes path return contains fastq files, returns df contains sample information
     ## takes input path
@@ -217,7 +145,7 @@ def parse_samples(inpath): # takes path return contains fastq files, returns df 
             sample_info = recogize_pattern(file_name)
 
             # get only forward reads and replace the read number to get R2
-            # appends sample information to a dict of dicts
+            # appends sample information to a dict of dicts        
             if "1" in sample_info["read_num"]:
                 read_2 = sample_info["read_num"].replace("1","2")
                 if sample_info["matched_pattern"] == "illumina":
@@ -231,7 +159,7 @@ def parse_samples(inpath): # takes path return contains fastq files, returns df 
                 if f2 in all_files:
                     sample_info["file2"] = f2
                     sample_info["PE"] = True
-                    samples[sample_info["sample_id"]] = sample_info
+                    samples[sample_info["sample_name"]] = sample_info
 
                 else:
                     sample_info["file2"] = ""
@@ -244,11 +172,8 @@ def parse_samples(inpath): # takes path return contains fastq files, returns df 
 
     return samples
 
-# sample table info
-### file_name sample_name sample_id read_num lane tail ext matched_pattern file2 PE
-### uniques = df['PE'].unique()
 
-def parse_input_args(args): # takes args (object) returns dict of args information
+def parse_input_args(args, wes=Fales): # takes args (object) returns dict of args information
     global glogger
     # set vars
     global verbose
@@ -281,8 +206,7 @@ def parse_input_args(args): # takes args (object) returns dict of args informati
 
         except:
             glogger.create_file_handler(f"{outpath}/main_log.txt")
-
-
+      
     # creates a dict with input args 
     all_args = vars(args)
 
@@ -313,6 +237,12 @@ def parse_input_args(args): # takes args (object) returns dict of args informati
     ext = str(check_extension(samples))
     PE = bool(check_PE(samples))
     R = str(check_R(samples))
+
+    if wes:
+        R_pattern = ""
+    else:
+        R_pattern = str(check_R_pattern(samples))
+    
     compressed = False
     EXT = ext
     pattern = str(check_pattern(samples))
@@ -325,24 +255,39 @@ def parse_input_args(args): # takes args (object) returns dict of args informati
     
     # check if analysis run before and created sample table 
     if os.path.exists(outpath+"/"+"samples.tsv"):
-        glogger.prnt_warning(f"Found an exsiting sample.tsv file in output directory, will not override.")
+        glogger.prnt_warning(f"Found an exsiting sample.tsv file in output directory, WILL OVERWRIDE!!")
+        samples.to_csv(outpath+"/"+"samples.tsv",sep='\t',index=False)
     else:
-        samples.to_csv(outpath+"/"+"samples.tsv",sep='\t')  
-    
-    extra_info = {
-        "path": path,
-        "working_dir": outpath,
-        "ext": ext,
-        "tail": tail,
-        "R": R,
-        "naming_pattern": pattern,
-        "R1_pattern": f"_{R}1_{tail}.{EXT}",
-        "R2_pattern": f"_{R}2_{tail}.{EXT}",
-        "compressed" : compressed,
-        "total_mem": all_mem,
-        "GUAP_DIR": GUAP_DIR,
-        "common_rules": f"{GUAP_DIR}/workflows/common/rules/"
-    }
+        samples.to_csv(outpath+"/"+"samples.tsv",sep='\t',index=False)  
+    if wes:
+        extra_info = {
+            "path": path,
+            "working_dir": outpath,
+            "ext": ext,
+            "tail": tail,
+            "R": R,
+            "naming_pattern": pattern,
+            "R_pattern": R_pattern,
+            "compressed" : compressed,
+            "total_mem": all_mem,
+            "GUAP_DIR": GUAP_DIR,
+            "common_rules": f"{GUAP_DIR}/workflows/common/rules/"
+        }
+    else:
+        extra_info = {
+            "path": path,
+            "working_dir": outpath,
+            "ext": ext,
+            "tail": tail,
+            "R": R,
+            "naming_pattern": pattern,
+            "R1_pattern": f"_{R}1_{tail}.{EXT}",
+            "R2_pattern": f"_{R}2_{tail}.{EXT}",
+            "compressed" : compressed,
+            "total_mem": all_mem,
+            "GUAP_DIR": GUAP_DIR,
+            "common_rules": f"{GUAP_DIR}/workflows/common/rules/"
+        }
 
     if "decompress" not in all_args:
         all_args.update({"decompress":False})
@@ -499,4 +444,93 @@ def process_snakemake_standard_output(snakemake_cmd, outfilelog):
                 except Exception as E:
                     glogger.prnt_fatel(f"Error in checking time stamp:\n{RED_}{E}{NC}")
   
+
+def qiime_table_checker(df):
+    if ("sample-id" or "id" or "sampleid" or "sample id") in df.columns:
+        if "#q2:types" in (df.iloc[:1]).values.tolist()[0]:
+            return True
+        else:
+            return False
+    else:
+        return False
+
+def check_metadata(args):
+    # samples dataframe and output path declaration 
+    samples = parse_samples(os.path.abspath(args.input))
+    samples_IDs = list(samples.iloc[:, 2])
+    outpath = os.path.abspath(args.output)
+
+    # check metadata file 
+    if args.metadata is None or args.create_metadata_table:
+        if args.create_metadata_table:
+            pass
+        else:
+            # prompt the user to create metadata file 
+            create_meta = input(f"{RED}No metadata file supplied,{NC} do I create an empty one with sample IDs? (y/n) ")
+            if create_meta == ( 'y' or 'Y'):
+                pass
+            else:
+                # exiting 
+                glogger.prnt_fatel("No metadata supplied or created!")
+        # creating metadata file 
+        glogger.prnt_warning(f"I will create one at '{args.output}', {YEL}\nplease re-run the analysis with: \n -m {args.output}/sample-metada.tsv after modifing the file\n{NC}(check https://docs.qiime2.org/2021.11/tutorials/metadata/)")
+        # creating empty data frame to store metadata info
+        header = pd.DataFrame({"1": ["#q2:types", "categorical"]}).T
+        header.columns = ["sample-id", "condition"]
+
+        new_samples = {}
+        c = 2
+        # get sample ids
+        for sample in samples_IDs:
+            new_samples[c] = [sample, "BLANK"]
+            c += 1
+        # store sample IDs and BLANK at new df, and export
+        samples_df = pd.DataFrame(new_samples).T
+        samples_df.columns = ["sample-id", "condition"]
+        samples_df = samples_df.sort_values(["sample-id"])
+        metadata_file = pd.concat([header, samples_df])
+        # Create the directory if it doesn't exist
+        if not os.path.exists(outpath):
+            os.makedirs(outpath)
+        metadata_file.to_csv(outpath+"/"+"sample-metadata.tsv",sep='\t',index=False) 
+        args.metadata = f"{outpath}/sample-metadata.tsv"
+        glogger.prnt_fatel(f"{GRE}Metadata empty file created, {RED}Exiting...{NC}")
+
+    else:
+        if not os.path.isfile(args.metadata):
+            glogger.prnt_fatel(f"{RED}{args.metadata} Doesn't exist!{NC}")
+        else:
+            # checking metadata file extension 
+            metadataname, metadataextension = os.path.splitext(args.metadata)
+            if metadataextension == (".tsv"):
+                the_file = pd.read_csv(args.metadata,sep="\t")
+            elif metadataextension == (".csv"):
+                the_file = pd.read_csv(args.metadata,sep="\t")
+            else:
+                glogger.prnt_fatel(f"{RED}{args.metadata} Have strange extension (use: tsv or csv){NC}")
+
+            rest_of_cols = the_file.columns[1:]
+            # checks all samples are present in the file with proper names
+            if False in samples['sample_id'].isin(the_file.T.iloc[0]).tolist():
+                glogger.prnt_fatel(f"{RED} Please check {args.metadata} sample IDs!\n{YEL}Note: {NC}You can re-run your code WITHOUT suppling a metadata file and \nGUAP will ask to create an empty one for you with the samples IDs.")
+     
+            else:
+                # check qiime2 format and modifing if not
+                if qiime_table_checker(the_file):
+                    if metadataextension == (".csv"):
+                        the_file.to_csv(outpath+"/"+"sample-metadata.tsv",sep='\t',index=False) 
+                        args.metadata = "{outpath}/sample-metadata.tsv"
+                else:
+                    print(f"{RED}Note:{NC}Modifing sample metadata file to be compatible with QIIME2")
+                    columns_names = rest_of_cols.to_list()
+                    columns_names.insert(0, 'sample-id')
+                    columns_names
+                    t = f'{(len(columns_names) -1 )* "categorical,"}'.split(",")[:-1]
+                    t.insert(0, "#q2:types")
+                    header_N = pd.DataFrame({1: t}).T
+                    header_N.columns = columns_names
+                    the_file.columns = columns_names
+                    last_file = pd.concat([header_N, the_file])
+                    last_file.to_csv(outpath+"/"+"sample-metadata.tsv",sep='\t',index=False) 
+                    args.metadata = f"{outpath}/sample-metadata.tsv"
 

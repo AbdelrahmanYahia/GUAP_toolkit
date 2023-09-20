@@ -1,1 +1,1 @@
-16s -i data/samples/16s/MiSeq_SOP -o test_16s_1 -ef 2 -er 2 -tf 260 -tr 160 --choose-classifier dada -c ./data/refs/16s/silva_nr99_v138.1_wSpecies_train_set.fa.gz -m data/samples/16s/sample-metadata.tsv --overwrite --skip-QC
+RNA --input ./RNA/ --output dirtest --aligner star --quantifier featurecounts --gtf-file ../refs/gtf/chr22_with_ERCC92.gtf --reference-fasta ../refs/fa/chr22 --reference-index ../refs/indexes/STAR/chr22-ERCC92/ --dry-run
