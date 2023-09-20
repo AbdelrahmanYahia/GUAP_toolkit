@@ -8,6 +8,7 @@ class BWGS(WorkflowCli):
     def add_arguments(self, parser):
         parser.add_argument('-i', '--input', help= "Input directory path", metavar='path', type=str)  
         parser.add_argument('-o', '--output', help= "Output directory path", metavar='path', type=str)
+        parser.add_argument('--gff', help= "Gff file", metavar='path', type=str)
 
         parser.add_argument('-t', '--threads', help= "Number of total no. of threads", type=int)
         parser.add_argument('--threads-index', help= "Number of threads to use during indexing ref", type=int )

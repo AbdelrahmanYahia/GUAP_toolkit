@@ -1,0 +1,32 @@
+name: bwgs
+channels:
+  - conda-forge
+  - bioconda
+  - defaults
+  - r
+dependencies:
+  - fastp 
+  - unicycler 
+  - quast 
+  - vcftools 
+  - bowtie2 
+  - samtools 
+  - qualimap 
+  - bcftools 
+  - multiqc 
+  - bedtools 
+  - pip
+  - snakemake
+  - kraken2
+  - platon
+  - blast
+  - entrez-direct
+  - r-tidyverse
+  - r-optparse
+  
+  - pip:
+    - pandas 
+    - psutil 
+    - pyyaml 
+    - argparse 
+    - tqdm
